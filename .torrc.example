@@ -1,0 +1,12 @@
+# Start tor with `tor -f $thisfile`
+
+#Log notice file /home/les/isolate.log
+
+VirtualAddrNetwork 10.200.1.1/10
+AutomapHostsSuffixes .onion,.exit
+AutomapHostsOnResolve 1
+TransPort 9040
+TransListenAddress 10.200.1.1
+DNSPort 5353
+DNSListenAddress 10.200.1.1
+
