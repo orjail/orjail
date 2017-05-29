@@ -1,5 +1,7 @@
 #!/bin/bash
 
+REALPATH=`realpath $0`
+REALPATH=`dirname $REALPATH`
 NAME=torjail
 
 # check if network namespace already exists
@@ -36,6 +38,5 @@ else
 
 fi
 
-
 # run your shit
-sudo ip netns exec $NAME $*
+sudo ip netns exec $NAME unshare --ipc --fork --pid --mount --mount-proc $REALPATH/inside.sh $*

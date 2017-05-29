@@ -34,7 +34,5 @@ DNSListenAddress 10.200.1.1
 `./torjail sudo -u $USER bash`
 
 
-### issues
-- you need a non loop-back nameserver specified in /etc/resolv.conf
 
 
