@@ -48,6 +48,7 @@ help_and_exit() {
   print G " <options> [command <arguments>...]"
   print N "Options:"
   print N "    -h, --help         It shows this menu."
+  print N "    -u, --user <user>  Execute the command with thi user permission."
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
@@ -97,6 +98,16 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$NAME" = "" ]; then
+        help_and_exit
+      fi
+    ;;
+
+    # Username
+    -u|--username)
+      USERNAME="$2"
+      shift
+
+      if [ "$USERNAME" = "" ]; then
         help_and_exit
       fi
     ;;
