@@ -5,7 +5,7 @@ REALPATH=`dirname $REALPATH`
 DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=`whoami`
-SILENCE=
+VERBOSE=
 KEEPRESOLVE=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -18,7 +18,7 @@ NETMASK=$IPNETMASK
 # ~~~~~~~~~
 
 print_real() {
-  if [ "$SILENCE" = y ]; then
+  if [ "$VERBOSE" != y ]; then
     return
   fi
 
@@ -42,13 +42,14 @@ printn() {
 }
 
 help_and_exit() {
+  VERBOSE=y
   printn N "Usage: "
   printn Y "$0"
   print G " <options> [command <arguments>...]"
   print N "Options:"
   print N "    -h, --help         It shows this menu."
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
-  print N "    -s, --silence      Don't print messages."
+  print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
@@ -70,7 +71,7 @@ if [ "$1" = "--inside" ]; then
   shift
   RESOLVEFILE="$1"
   shift
-  SILENCE="$1"
+  VERBOSE="$1"
   shift
 
   print G " * Replacing resolv.conf..."
@@ -99,8 +100,8 @@ while [[ $# -gt 0 ]]; do
       fi
     ;;
 
-    -s|--silence)
-      SILENCE=y
+    -v|--verbose)
+      VERBOSE=y
       ;;
 
     -k|--keep)
@@ -137,7 +138,7 @@ done
 
 # Let's replace $1 with the current shell if no command has been passed.
 if [ "$1" = "" ]; then
-  set -- "$SHELL"
+  help_and_exit
 fi
 
 # check if network namespace already exists
@@ -197,7 +198,7 @@ echo "nameserver $IPHOST" > $RESOLVEFILE
 # run your shit
 sudo ip netns exec $NAME \
   unshare --ipc --fork --pid --mount --mount-proc \
-  $0 --inside "$USERNAME" "$RESOLVEFILE" "$SILENCE" $*
+  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
 
 if [ "$KEEPRESOLVE" != 'y' ]; then
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
