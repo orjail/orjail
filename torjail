@@ -12,7 +12,7 @@ IPHOST=$IPHOSTDEFAULT
 IPNETNSDEFAULT=10.200.1.2
 IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
-NETMASK=$IPNETMASK
+NETMASK=$NETMASKDEFAULT
 
 # Functions
 # ~~~~~~~~~
@@ -149,9 +149,12 @@ fi
 # check if network namespace already exists
 sudo ip netns list | grep -e ^$NAME\  &> /dev/null
 if [ $? -ne 0 ]; then
+  OLDVERBOSE=$VERBOSE
+  VERBOSE=y
   print G "It seems that you don't have the namespace $NAME."
   printn Y "Do you want to create it? [y/n] "
   read CREATE
+  VERBOSE=$OLDVERBOSE
 
   if [ "$CREATE" != y ] && [ "$CREATE" != Y ]; then
     print G "Ok. Bye!"
