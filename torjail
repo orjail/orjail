@@ -51,6 +51,7 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
+  print N "    -s, --shell        Execute a shell."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "If command is not passed, the current shell will be executed."
@@ -121,6 +122,10 @@ while [[ $# -gt 0 ]]; do
          [ "$NETMASK" = "" ]; then
         help_and_exit
       fi
+      ;;
+
+    -s|--shell)
+      set -- "${@:1:1}" "$SHELL"
       ;;
 
     # Help menu
