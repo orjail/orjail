@@ -29,10 +29,5 @@ DNSListenAddress 10.200.1.1
   
 > warning: firefox has a flag that block .onion resolution by default -> change it using about:config network.dns.blockDotOnion
 
-
 - get a shell that could not reach internet (only via tor)  
 `./torjail sudo -u $USER bash`
-
-
-
-
