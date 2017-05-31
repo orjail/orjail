@@ -7,6 +7,12 @@ NAME=$DEFAULTNAME
 USERNAME=`whoami`
 SILENCE=
 KEEPRESOLVE=
+IPHOSTDEFAULT=10.200.1.1
+IPHOST=$IPHOSTDEFAULT
+IPNETNSDEFAULT=10.200.1.2
+IPNETNS=$IPNETNSDEFAULT
+NETMASKDEFAULT=24
+NETMASK=$IPNETMASK
 
 # Functions
 # ~~~~~~~~~
@@ -44,6 +50,8 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -s, --silence      Don't print messages."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
+  print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
+  print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "If command is not passed, the current shell will be executed."
   exit 0
 }
@@ -66,7 +74,7 @@ if [ "$1" = "--inside" ]; then
   shift
 
   print G " * Replacing resolv.conf..."
-  mount --bind $REALPATH/resolv.conf /etc/resolv.conf
+  mount --bind $RESOLVEFILE /etc/resolv.conf
 
   print G " * Executing..."
 
@@ -84,10 +92,11 @@ while [[ $# -gt 0 ]]; do
     # Replacing the name
     -n|--name)
       NAME="$2"
+      shift
+
       if [ "$NAME" = "" ]; then
         help_and_exit
       fi
-      shift
     ;;
 
     -s|--silence)
@@ -96,6 +105,21 @@ while [[ $# -gt 0 ]]; do
 
     -k|--keep)
       KEEPRESOLVE=y
+      ;;
+
+    -r|--routing)
+      IPHOST="$2"
+      shift
+      IPNETNS="$2"
+      shift
+      NETMASK="$2"
+      shift
+
+      if [ "$IPHOST" = "" ] ||
+         [ "$IPNETNS" = "" ] ||
+         [ "$NETMASK" = "" ]; then
+        help_and_exit
+      fi
       ;;
 
     # Help menu
@@ -142,17 +166,17 @@ if [ $? -ne 0 ]; then
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  sudo ip addr add 10.200.1.1/24 dev in-$NAME
+  sudo ip addr add $IPHOST/$NETMASK dev in-$NAME
   sudo ip link set in-$NAME up
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  sudo ip netns exec $NAME ip addr add 10.200.1.2/24 dev out-$NAME
+  sudo ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME
   sudo ip netns exec $NAME ip link set out-$NAME up
 
   # default route
   print G " * Default routing up..."
-  sudo ip netns exec $NAME ip route add default via 10.200.1.1
+  sudo ip netns exec $NAME ip route add default via $IPHOST
 
   # resolve with tor
   print G " * Resolving via TOR..."
@@ -162,15 +186,13 @@ if [ $? -ne 0 ]; then
   print G " * Traffic via TOR..."
   sudo iptables -t nat -A PREROUTING -i in-$NAME -p tcp --syn  -j REDIRECT --to-ports 9040
   sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-  print G "All done!"
 else
   print Y "$NAME network namespace already exists!"
 fi
 
 RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
 print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-echo "nameserver 10.200.1.1" > $RESOLVEFILE
+echo "nameserver $IPHOST" > $RESOLVEFILE
 
 # run your shit
 sudo ip netns exec $NAME \
