@@ -5,11 +5,17 @@ REALPATH=`dirname $REALPATH`
 DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=`whoami`
+SILENCE=
+KEEPRESOLVE=
 
 # Functions
 # ~~~~~~~~~
 
 print_real() {
+  if [ "$SILENCE" = y ]; then
+    return
+  fi
+
   if [ $2 = 'G' ]; then
     echo $1 -e "\e[32m$3\e[0m"
   elif [ $2 = 'Y' ]; then
@@ -36,7 +42,9 @@ help_and_exit() {
   print N "Options:"
   print N "    -h, --help         It shows this menu."
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
-  print N "If command is not passed, the shell will be executed."
+  print N "    -s, --silence      Don't print messages."
+  print N "    -k, --keep         Don't delete the resolve file after the execution."
+  print N "If command is not passed, the current shell will be executed."
   exit 0
 }
 
@@ -44,12 +52,17 @@ help_and_exit() {
 # ~~~~~~~~~~~
 
 # This part is executed only inside the namespace.
+# The arguments are: --inside <username> <resolvefile> <silence> <command> <arguments...>
 if [ "$1" = "--inside" ]; then
   REALPATH=`realpath $0`
   REALPATH=`dirname $REALPATH`
 
   shift
   USERNAME="$1"
+  shift
+  RESOLVEFILE="$1"
+  shift
+  SILENCE="$1"
   shift
 
   print G " * Replacing resolv.conf..."
@@ -76,6 +89,14 @@ while [[ $# -gt 0 ]]; do
       fi
       shift
     ;;
+
+    -s|--silence)
+      SILENCE=y
+      ;;
+
+    -k|--keep)
+      KEEPRESOLVE=y
+      ;;
 
     # Help menu
     -h|--help)
@@ -147,5 +168,16 @@ else
   print Y "$NAME network namespace already exists!"
 fi
 
+RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
+print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
+echo "nameserver 10.200.1.1" > $RESOLVEFILE
+
 # run your shit
-sudo ip netns exec $NAME unshare --ipc --fork --pid --mount --mount-proc $0 --inside $USERNAME $*
+sudo ip netns exec $NAME \
+  unshare --ipc --fork --pid --mount --mount-proc \
+  $0 --inside "$USERNAME" "$RESOLVEFILE" "$SILENCE" $*
+
+if [ "$KEEPRESOLVE" != 'y' ]; then
+  print G " * Removing the temporary resolve file $RESOLVEFILE..."
+  rm "$RESOLVEFILE"
+fi
