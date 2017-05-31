@@ -41,10 +41,24 @@ printn() {
   print_real "-n" "$1" "$2"
 }
 
+printv() {
+  OLDVERBOSE=$VERBOSE
+  VERBOSE=y
+  print_real '' "$1" "$2"
+  VERBOSE=$OLDVERBOSE
+}
+
+printvn() {
+  OLDVERBOSE=$VERBOSE
+  VERBOSE=y
+  print_real "-n" "$1" "$2"
+  VERBOSE=$OLDVERBOSE
+}
+
 help_and_exit() {
   VERBOSE=y
   printn N "Usage: "
-  printn Y "$0"
+  printn Y "$DEFAULTNAME"
   print G " <options> [command <arguments>...]"
   print N "Options:"
   print N "    -h, --help         It shows this menu."
@@ -56,14 +70,15 @@ help_and_exit() {
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "If command is not passed, the current shell will be executed."
-  exit 0
+  exit $1
 }
 
 # Inside part
 # ~~~~~~~~~~~
 
-# This part is executed only inside the namespace.
-# The arguments are: --inside <username> <resolvefile> <silence> <command> <arguments...>
+# This script calls itself. yeah \o/ This part is executed only inside the
+# namespace. The arguments are:
+# --inside <username> <resolvefile> <silence> <command> <arguments...>
 if [ "$1" = "--inside" ]; then
   REALPATH=`realpath $0`
   REALPATH=`dirname $REALPATH`
@@ -98,7 +113,8 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$NAME" = "" ]; then
-        help_and_exit
+        printv R "$key requires an argument."
+        exit 1
       fi
     ;;
 
@@ -108,7 +124,8 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$USERNAME" = "" ]; then
-        help_and_exit
+        printv R "$key requires an argument."
+        exit 1
       fi
     ;;
 
@@ -131,7 +148,8 @@ while [[ $# -gt 0 ]]; do
       if [ "$IPHOST" = "" ] ||
          [ "$IPNETNS" = "" ] ||
          [ "$NETMASK" = "" ]; then
-        help_and_exit
+        printv R "$key requires an 3 arguments."
+        exit 1
       fi
       ;;
 
@@ -141,7 +159,7 @@ while [[ $# -gt 0 ]]; do
 
     # Help menu
     -h|--help)
-      help_and_exit
+      help_and_exit 0
     ;;
 
     # The rest
@@ -152,20 +170,22 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-# Let's replace $1 with the current shell if no command has been passed.
+if [[ $EUID -ne 0 ]]; then
+   printv R "$DEFAULTNAME must be run as root."
+   exit 1
+fi
+
+# No arguments, no party
 if [ "$1" = "" ]; then
-  help_and_exit
+  help_and_exit 1
 fi
 
 # check if network namespace already exists
-sudo ip netns list | grep -e ^$NAME\  &> /dev/null
+ip netns list | grep -e ^$NAME\  &> /dev/null
 if [ $? -ne 0 ]; then
-  OLDVERBOSE=$VERBOSE
-  VERBOSE=y
-  print G "It seems that you don't have the namespace $NAME."
-  printn Y "Do you want to create it? [y/n] "
+  printv G "It seems that you don't have the namespace $NAME."
+  printvn Y "Do you want to create it? [y/n] "
   read CREATE
-  VERBOSE=$OLDVERBOSE
 
   if [ "$CREATE" != y ] && [ "$CREATE" != Y ]; then
     print G "Ok. Bye!"
@@ -174,38 +194,38 @@ if [ $? -ne 0 ]; then
 
   print G " * Creating a $NAME namespace..."
   # add network namespace
-  sudo ip netns add $NAME
+  ip netns add $NAME
 
   # Create veth link.
   print G " * Creating a veth link..."
-  sudo ip link add in-$NAME type veth peer name out-$NAME
+  ip link add in-$NAME type veth peer name out-$NAME
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
-  sudo ip link set out-$NAME netns $NAME
+  ip link set out-$NAME netns $NAME
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  sudo ip addr add $IPHOST/$NETMASK dev in-$NAME
-  sudo ip link set in-$NAME up
+  ip addr add $IPHOST/$NETMASK dev in-$NAME
+  ip link set in-$NAME up
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  sudo ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME
-  sudo ip netns exec $NAME ip link set out-$NAME up
+  ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME
+  ip netns exec $NAME ip link set out-$NAME up
 
   # default route
   print G " * Default routing up..."
-  sudo ip netns exec $NAME ip route add default via $IPHOST
+  ip netns exec $NAME ip route add default via $IPHOST
 
   # resolve with tor
   print G " * Resolving via TOR..."
-  sudo iptables -t nat -A  PREROUTING -i in-$NAME -p udp --dport 53 -j REDIRECT --to-ports 5353
+  iptables -t nat -A  PREROUTING -i in-$NAME -p udp --dport 53 -j REDIRECT --to-ports 5353
 
   # traffic througth tor
   print G " * Traffic via TOR..."
-  sudo iptables -t nat -A PREROUTING -i in-$NAME -p tcp --syn  -j REDIRECT --to-ports 9040
-  sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -t nat -A PREROUTING -i in-$NAME -p tcp --syn  -j REDIRECT --to-ports 9040
+  iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 else
   print Y "$NAME network namespace already exists!"
 fi
@@ -215,11 +235,14 @@ print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
 echo "nameserver $IPHOST" > $RESOLVEFILE
 
 # run your shit
-sudo ip netns exec $NAME \
+ip netns exec $NAME \
   unshare --ipc --fork --pid --mount --mount-proc \
   $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
 
+# removing the resolv.conf file
 if [ "$KEEPRESOLVE" != 'y' ]; then
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
   rm "$RESOLVEFILE"
 fi
+
+# All done!
