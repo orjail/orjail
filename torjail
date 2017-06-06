@@ -154,7 +154,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     -s|--shell)
-      set -- "${@:1:1}" "$SHELL"
+      set -- $@ "$SHELL"
       ;;
 
     # Help menu
