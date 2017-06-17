@@ -92,7 +92,7 @@ if [ "$1" = "--inside" ]; then
   shift
 
   print G " * Replacing resolv.conf..."
-  mount --bind $RESOLVEFILE /etc/resolv.conf
+  mount --bind -o users $RESOLVEFILE /etc/resolv.conf
 
   print G " * Executing..."
 
@@ -226,6 +226,26 @@ if [ $? -ne 0 ]; then
   print G " * Traffic via TOR..."
   iptables -t nat -A PREROUTING -i in-$NAME -p tcp --syn  -j REDIRECT --to-ports 9040
   iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+  # executing tor
+  print G " * Creating the TOR configuration file..."
+  TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+  echo "
+    DataDirectory /tmp/torjail-$NAME
+    VirtualAddrNetwork $IPNETNS/16
+    AutomapHostsSuffixes .onion,.exit 
+    AutomapHostsOnResolve 1
+    TransPort 9040 
+    TransListenAddress $IPHOST
+    DNSPort 5353
+    DNSListenAddress $IPHOST
+    RunAsDaemon 1
+    SOCKSPort $IPHOST:9050
+  " > $TORCONFIGFILE
+
+  # executing tor
+  print G " * Executing TOR..."
+  tor --quiet -f $TORCONFIGFILE
 else
   print Y "$NAME network namespace already exists!"
 fi
