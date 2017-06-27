@@ -220,11 +220,11 @@ if [ $? -ne 0 ]; then
 
   # resolve with tor
   print G " * Resolving via TOR..."
-  iptables -t nat -A  PREROUTING -i in-torjail -p udp --dport 53 -j DNAT --to-destination $IPHOST:5353
+  iptables -t nat -A  PREROUTING -i in-$NAME -p udp --dport 53 -j DNAT --to-destination $IPHOST:5353
 
   # traffic througth tor
   print G " * Traffic via TOR..."
-  iptables -t nat -A  PREROUTING -i in-torjail -p tcp --syn -j DNAT --to-destination $IPHOST:9040
+  iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT --to-destination $IPHOST:9040
   iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
   # executing tor
