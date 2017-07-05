@@ -6,6 +6,7 @@ DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 VERBOSE=
+TOREXEC=n
 KEEPRESOLVE=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -67,6 +68,7 @@ help_and_exit() {
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
   print N "    -s, --shell        Execute a shell."
+  print N "    -t, --tor-exec     Executes a tor instance with .torrc.example configuration. Disabled by default."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "If command is not passed, the current shell will be executed."
@@ -153,6 +155,10 @@ while [[ $# -gt 0 ]]; do
       fi
       ;;
 
+    -t|--tor-exec)
+      TOREXEC=y
+      ;;
+
     -s|--shell)
       set -- $@ "$SHELL"
       ;;
@@ -227,25 +233,27 @@ if [ $? -ne 0 ]; then
   iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT --to-destination $IPHOST:9040
   iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-  # executing tor
-  print G " * Creating the TOR configuration file..."
-  TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  echo "
+  if [ $TOREXEC = y ]; then
+    # executing tor
+    print G " * Creating the TOR configuration file..."
+    TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+    echo "
     DataDirectory /tmp/torjail-$NAME
     VirtualAddrNetwork $IPNETNS/16
-    AutomapHostsSuffixes .onion,.exit 
+    AutomapHostsSuffixes .onion,.exit
     AutomapHostsOnResolve 1
-    TransPort 9040 
+    TransPort 9040
     TransListenAddress $IPHOST
     DNSPort 5353
     DNSListenAddress $IPHOST
-    RunAsDaemon 1
     SOCKSPort $IPHOST:9050
-  " > $TORCONFIGFILE
+    " > $TORCONFIGFILE
 
-  # executing tor
-  print G " * Executing TOR..."
-  tor --quiet -f $TORCONFIGFILE
+    # executing tor
+    print G " * Executing TOR..."
+    tor --quiet -f $TORCONFIGFILE &> /dev/null &
+    TORPID=$!
+  fi
 else
   print Y "$NAME network namespace already exists!"
 fi
@@ -258,6 +266,14 @@ echo "nameserver $IPHOST" > $RESOLVEFILE
 ip netns exec $NAME \
   unshare --ipc --fork --pid --mount --mount-proc \
   $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
+
+# cleanup
+if [ $TOREXEC = y ]; then
+  print G " * Killing tor process $TORPID"
+  kill -9 $TORPID &> /dev/null
+  wait $! &> /dev/null
+  print G " * Killed $TORPID"
+fi
 
 # removing the resolv.conf file
 if [ "$KEEPRESOLVE" != 'y' ]; then
