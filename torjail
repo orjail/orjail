@@ -297,6 +297,10 @@ if [ $TOREXEC = y ]; then
   print G " * Killed $TORPID"
 fi
 
+# Remove network namespace
+print G "* Delete network namespace $NAME"
+ip netns delete $NAME
+
 # removing the resolv.conf file
 if [ "$KEEPRESOLVE" != 'y' ]; then
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
