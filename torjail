@@ -56,6 +56,7 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+    if [ "$TOREXEC" = y ]; then
 help_and_exit() {
   VERBOSE=y
   printn N "Usage: "
@@ -196,7 +197,7 @@ fi
 
 # Check tor running
 TORBIN=
-if [ $TOREXEC = y ]; then
+if [ "$TOREXEC" = y ]; then
     TORBIN=tor
 fi
 
@@ -254,7 +255,7 @@ if [ $? -ne 0 ]; then
   iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT --to-destination $IPHOST:9040
   iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-  if [ $TOREXEC = y ]; then
+  if [ "$TOREXEC" = y ]; then
     # executing tor
     print G " * Creating the TOR configuration file..."
     TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
