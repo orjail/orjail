@@ -62,7 +62,7 @@ help_and_exit() {
   print G " <options> [command <arguments>...]"
   print N "Options:"
   print N "    -h, --help         It shows this menu."
-  print N "    -u, --user <user>  Execute the command with thi user permission."
+  print N "    -u, --user <user>  Execute the command with this user permission. By default '$USERNAME'."
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete the resolve file after the execution."
