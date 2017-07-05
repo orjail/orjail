@@ -6,7 +6,7 @@ DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 VERBOSE=
-TOREXEC=n
+TOREXEC=
 KEEP=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -290,7 +290,7 @@ ip netns exec $NAME \
   $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
 
 # removing the namespace
-if [ "$KEEP" = 'y' ]; then
+if [ "$KEEP" = y ]; then
   print G " * Keeping the tor process $TORPID running"
   print G " * Keeping the namespace $NAME"
 else
