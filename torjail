@@ -7,7 +7,7 @@ NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 VERBOSE=
 TOREXEC=n
-KEEPRESOLVE=
+KEEP=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
 IPNETNSDEFAULT=10.200.1.2
@@ -66,7 +66,7 @@ help_and_exit() {
   print N "    -u, --user <user>  Execute the command with this user permission. By default '$USERNAME'."
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
-  print N "    -k, --keep         Don't delete the resolve file after the execution."
+  print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -s, --shell        Execute a shell."
   print N "    -t, --tor-exec     Executes a tor instance with .torrc.example configuration. Disabled by default."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
@@ -135,7 +135,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     -k|--keep)
-      KEEPRESOLVE=y
+      KEEP=y
       ;;
 
     -r|--routing)
@@ -289,22 +289,22 @@ ip netns exec $NAME \
   unshare --ipc --fork --pid --mount --mount-proc \
   $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
 
-# cleanup
-if [ $TOREXEC = y ]; then
-  print G " * Killing tor process $TORPID"
-  kill -9 $TORPID &> /dev/null
-  wait $! &> /dev/null
-  print G " * Killed $TORPID"
+# removing the namespace
+if [ "$KEEP" = 'y' ]; then
+  print G " * Keeping the tor process $TORPID running"
+  print G " * Keeping the namespace $NAME"
+else
+  if [ $TOREXEC = y ]; then
+    print G " * Killing tor process $TORPID"
+    kill -9 $TORPID &> /dev/null
+    wait $! &> /dev/null
+    print G " * Killed $TORPID"
+  fi
+  print G " * Delete network namespace $NAME"
+  ip netns delete $NAME
 fi
 
-# Remove network namespace
-print G "* Delete network namespace $NAME"
-ip netns delete $NAME
-
-# removing the resolv.conf file
-if [ "$KEEPRESOLVE" != 'y' ]; then
-  print G " * Removing the temporary resolve file $RESOLVEFILE..."
-  rm "$RESOLVEFILE"
-fi
+print G " * Removing the temporary resolve file $RESOLVEFILE..."
+rm "$RESOLVEFILE"
 
 # All done!
