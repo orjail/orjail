@@ -186,6 +186,28 @@ if [ "$1" = "" ]; then
   help_and_exit 1
 fi
 
+# Tor
+# Colors
+
+# Check linux kernel
+if [ "$(uname)" != Linux ]; then
+  printv R "No Linux no party"
+  exit 1
+fi
+
+# Check tor running
+TORBIN=
+if [ $TOREXEC = y ]; then
+    TORBIN=tor
+fi
+
+for cmd in ip iptables $TORBIN; do
+  if [ "$(whereis $cmd | cut -d: -f2)" = '' ]; then
+      printv R "No $cmd tools found"
+      exit 1
+  fi
+done
+
 # check if network namespace already exists
 ip netns list | grep -e ^$NAME\  &> /dev/null
 if [ $? -ne 0 ]; then
