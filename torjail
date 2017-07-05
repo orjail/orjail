@@ -71,7 +71,6 @@ help_and_exit() {
   print N "    -t, --tor-exec     Executes a tor instance with .torrc.example configuration. Disabled by default."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
-  print N "If command is not passed, the current shell will be executed."
   exit $1
 }
 
