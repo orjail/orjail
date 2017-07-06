@@ -23,14 +23,25 @@ print_real() {
     return
   fi
 
+  if [ -t 1 ]; then
+    NCOLORS=$(tput colors)
+
+    if test -n "$NCOLORS" && test $NCOLORS -ge 8; then
+      NORMAL="$(tput sgr0)"
+      RED="$(tput setaf 1)"
+      GREEN="$(tput setaf 2)"
+      YELLOW="$(tput setaf 3)"
+    fi
+  fi
+
   if [ $2 = 'G' ]; then
-    echo $1 -e "\e[32m$3\e[0m"
+    echo $1 -e "${GREEN}$3${NORMAL}"
   elif [ $2 = 'Y' ]; then
-    echo $1 -e "\e[33m$3\e[0m"
+    echo $1 -e "${YELLOW}$3${NORMAL}"
   elif [ $2 = 'N' ]; then
-    echo $1 "$3"
+    echo $1 -e "$3"
   else
-    echo $1 -e "\e[31m$3\e[0m"
+    echo $1 -e "${RED}$3${NORMAL}"
   fi
 }
 
