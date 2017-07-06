@@ -56,6 +56,15 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+error() {
+  printv R "$1"
+}
+
+die() {
+  error "$1"
+  exit 1
+}
+
 help_and_exit() {
   VERBOSE=y
   printn N "Usage: "
@@ -93,11 +102,12 @@ if [ "$1" = "--inside" ]; then
   shift
 
   print G " * Replacing resolv.conf..."
-  mount --bind -o users $RESOLVEFILE /etc/resolv.conf
+  mount --bind -o users $RESOLVEFILE /etc/resolv.conf || \
+    error "Failed to mount /etc/resolv.conf."
 
   print G " * Executing..."
 
-  sudo -u $USERNAME $*
+  sudo -u $USERNAME $* || error "Execution failed."
   exit
 fi
 
@@ -202,8 +212,8 @@ fi
 
 for cmd in ip iptables $TORBIN; do
   if [ "$(whereis $cmd | cut -d: -f2)" = '' ]; then
-      printv R "No $cmd tools found"
-      exit 1
+    printv R "No $cmd tools found"
+    exit 1
   fi
 done
 
@@ -221,38 +231,49 @@ if [ $? -ne 0 ]; then
 
   print G " * Creating a $NAME namespace..."
   # add network namespace
-  ip netns add $NAME
+  ip netns add $NAME || die "Failed to add a new namespace"
 
   # Create veth link.
   print G " * Creating a veth link..."
-  ip link add in-$NAME type veth peer name out-$NAME
+  ip link add in-$NAME type veth peer name out-$NAME || \
+    die "Failed to add a veth interface"
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
-  ip link set out-$NAME netns $NAME
+  ip link set out-$NAME netns $NAME || \
+    die "Failed to assign veth interface to the namespace"
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  ip addr add $IPHOST/$NETMASK dev in-$NAME
-  ip link set in-$NAME up
+  ip addr add $IPHOST/$NETMASK dev in-$NAME || \
+    die "Failed to assign veth interface to the host"
+  ip link set in-$NAME up || die "Failed to set up the veth interface"
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME
-  ip netns exec $NAME ip link set out-$NAME up
+  ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME || \
+    die "Failed to assign an IP to the veth interface"
+  ip netns exec $NAME ip link set out-$NAME up || \
+    die "Failed to assign an IP to the veth interface"
 
   # default route
   print G " * Default routing up..."
-  ip netns exec $NAME ip route add default via $IPHOST
+  ip netns exec $NAME ip route add default via $IPHOST || \
+    die "Failed to set up the network routing"
 
   # resolve with tor
   print G " * Resolving via TOR..."
-  iptables -t nat -A  PREROUTING -i in-$NAME -p udp --dport 53 -j DNAT --to-destination $IPHOST:5353
+  iptables -t nat -A  PREROUTING -i in-$NAME -p udp --dport 53 -j DNAT \
+           --to-destination $IPHOST:5353 || \
+    die "Failed to configure iptable for routing the tor DNS lookup"
 
   # traffic througth tor
   print G " * Traffic via TOR..."
-  iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT --to-destination $IPHOST:9040
-  iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
+           --to-destination $IPHOST:9040 || \
+    die "Failed to configure iptable for routing the network traffic"
+  iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT || \
+    die "Failed to configure the iptable for accepting connection"
 
   if [ $TOREXEC = y ]; then
     # executing tor
@@ -284,13 +305,14 @@ fi
 
 RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
 print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-echo "nameserver $IPHOST" > $RESOLVEFILE
-chmod a+r $RESOLVEFILE
+echo "nameserver $IPHOST" > $RESOLVEFILE || die "Failed to create $RESOLVEFILE"
+chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
 # run your shit
 ip netns exec $NAME \
   unshare --ipc --fork --pid --mount --mount-proc \
-  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $*
+  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
+  die "Failed to execute the inside part of this script"
 
 # removing the namespace
 if [ "$KEEP" = 'y' ]; then
@@ -304,10 +326,10 @@ else
     print G " * Killed $TORPID"
   fi
   print G " * Delete network namespace $NAME"
-  ip netns delete $NAME
+  ip netns delete $NAME || die "Failed to delete the namespace"
 fi
 
 print G " * Removing the temporary resolve file $RESOLVEFILE..."
-rm "$RESOLVEFILE"
+rm "$RESOLVEFILE" || die "Failed to remove $RESOLVEFILE"
 
 # All done!
