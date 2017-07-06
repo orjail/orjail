@@ -6,7 +6,7 @@ DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 VERBOSE=
-TOREXEC=n
+TOREXEC=
 KEEP=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -67,6 +67,34 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+# Handler of namespace, tor and resolve file
+cleanup() {
+  # removing the namespace
+  if [ "$KEEP" = y ]; then
+    print G " * Keeping the tor process $TORPID running"
+    print G " * Keeping the namespace $NAME"
+  else
+    if [ "$TOREXEC" = y ]; then
+      print G " * Killing tor process $TORPID"
+      kill -9 $TORPID &> /dev/null
+      wait $! &> /dev/null
+      print G " * Killed $TORPID"
+    fi
+    print G " * Delete network namespace $NAME"
+    ip netns delete $NAME
+  fi
+
+  print G " * Removing the temporary resolve file $RESOLVEFILE..."
+  rm "$RESOLVEFILE"
+}
+
+# Handler of the interrupt signal
+interrupted() {
+  printv R " * Received stop signal"
+  cleanup
+  exit 1
+}
+
 error() {
   printv R "$1"
 }
@@ -124,6 +152,9 @@ fi
 
 # The tool
 # ~~~~~~~~
+
+# Call cleanup on ctrl-c (SIGINT)
+trap interrupted SIGINT
 
 # Arguments check
 while [[ $# -gt 0 ]]; do
@@ -217,7 +248,7 @@ fi
 
 # Check tor running
 TORBIN=
-if [ $TOREXEC = y ]; then
+if [ "$TOREXEC" = y ]; then
     TORBIN=tor
 fi
 
@@ -286,7 +317,7 @@ if [ $? -ne 0 ]; then
   iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
-  if [ $TOREXEC = y ]; then
+  if [ "$TOREXEC" = y ]; then
     # executing tor
     print G " * Creating the TOR configuration file..."
     TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
@@ -309,8 +340,6 @@ if [ $? -ne 0 ]; then
   fi
 else
   print Y "$NAME network namespace already exists!"
-
-  # if the namespace exists, we don't want to delete it.
   KEEP=y
 fi
 
@@ -325,22 +354,7 @@ ip netns exec $NAME \
   $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
   die "Failed to execute the inside part of this script"
 
-# removing the namespace
-if [ "$KEEP" = 'y' ]; then
-  print G " * Keeping the tor process $TORPID running"
-  print G " * Keeping the namespace $NAME"
-else
-  if [ $TOREXEC = y ]; then
-    print G " * Killing tor process $TORPID"
-    kill -9 $TORPID &> /dev/null
-    wait $! &> /dev/null
-    print G " * Killed $TORPID"
-  fi
-  print G " * Delete network namespace $NAME"
-  ip netns delete $NAME || die "Failed to delete the namespace"
-fi
-
-print G " * Removing the temporary resolve file $RESOLVEFILE..."
-rm "$RESOLVEFILE" || die "Failed to remove $RESOLVEFILE"
+# clean some shit
+cleanup
 
 # All done!
