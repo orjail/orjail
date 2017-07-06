@@ -277,6 +277,9 @@ if [ $? -ne 0 ]; then
   fi
 else
   print Y "$NAME network namespace already exists!"
+
+  # if the namespace exists, we don't want to delete it.
+  KEEP=y
 fi
 
 RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
