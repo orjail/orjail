@@ -80,8 +80,19 @@ cleanup() {
       wait $! &> /dev/null
       print G " * Killed $TORPID"
     fi
+
+	  print G " * Removing in-$NAME network interface"
+	  ip link del in-$NAME
+
     print G " * Delete network namespace $NAME"
     ip netns delete $NAME
+
+	  print G " * Cleaning up iptables rules..."
+	  iptables -t nat -D  PREROUTING -i in-$NAME -p udp --dport 53 -j DNAT \
+	           --to-destination $IPHOST:5353
+	  iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
+	           --to-destination $IPHOST:9040
+	  iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
   fi
 
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
