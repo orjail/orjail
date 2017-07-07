@@ -1,38 +1,69 @@
 # torjail
-bind a program inside a network namespace that can only exit through tor
+a more secure way to force programs to exclusively use tor network
 
-### requirements
-you'll need a running tor instance with following configuration:
-```
-VirtualAddrNetwork 10.200.1.1/10
-AutomapHostsSuffixes .onion,.exit
-AutomapHostsOnResolve 1
-TransPort 9040
-TransListenAddress 10.200.1.1
-DNSPort 5353
-DNSListenAddress 10.200.1.1
-```
+### WARNING
+torjail is under development, use at your own risk.
+if you find a bug, please create an [issue](https://github.com/lesion/torjail/issues)
 
 ### why?
 we've tried to deanonimize a program executed in torsocks environemnt and that was not so difficult, as torsocks use LD_PRELOAD so you only need to statically compile your stuff.
-as whonix is too much, the idea is to experiment with linux namespaces and learn by doing something usefull (at least for us).
+as [whonix](https://www.whonix.org/) is sometimes too much, the idea is to experiment with [linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) and learn by doing something usefull (at least for us).
 
+### requirements
+- a linux kernel supporting namespaces (you have it since 2008)
+- tor installed
 
 ### how it works
 it creates a separated network namespace (using `ip netns`) with its own network
-interface and a bridge to the host interface with some iptables rules (on host)
-that force traffic generated from inside torjail to only exit via tor.
+interface and a link to the host interface with some iptables rules (on host)
+that force traffic generated from inside torjail to only exit via tor (including dns).  
 inside torjail you'll be in another pid namespace (this way you cannot switch
-namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).
-if you find a way to deanonimize torjail, write us!
+namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).  
+if you find a way to deanonimize a program running inside torjail (also a shell with root privileges) would be nice to [share it with us](https://github.com/lesion/torjail/issues)
 
-### usage examples:
+### additional info
+- `torjail` needs root permission to run
+- `torjail` runs your program as your user
+- `torjail` will launch a tor instance with a default configuration (but you can specify your own instance with `-t`)
+- other questions?
 
+
+### usage examples: 
+ 
 - the help menu:
 `torjail -h`
+```
+Usage: torjail <options> [command <arguments>...]
+Options:
+    -h, --help         It shows this menu.
+    -u, --user <user>  Execute the command with this user permission. By default 'les'.
+    -n, --name <name>  Set a custom namespace name. By default 'torjail'.
+    -v, --verbose      Verbose mode.
+    -k, --keep         Don't delete namespace and don't kill tor after the execution.
+    -s, --shell        Execute a shell.
+    -t, --tor <tor_host> <tor_trans_port> <tor_dns_port>
+                       Use an external tor instance (need DNSPost and TransPort enabled)
+    -r, --routing <ip_host> <ip_ns> <netmask>
+                       Set custom IPs. By default 10.200.1.1/10.200.1.2/24.
+```
 
-- get an homepage content via tor, executing curl as user $USER
-`sudo torjail -u $USER curl autistici.org > autistici.org `
+- an example to see what are we talking about:
+```$ sudo torjail ifconfig
+out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.200.1.2  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::6439:afff:febc:c9b5  prefixlen 64  scopeid 0x20<link>
+        ether 66:39:af:bc:c9:b5  txqueuelen 1000  (Ethernet)
+        RX packets 6847  bytes 7488116 (7.1 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 6809  bytes 915088 (893.6 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
+
+- get an homepage content via tor, executing curl
+`sudo torjail curl autistici.org > autistici.org `
+
+- same as before with another user
+`sudo torjail -u another_user curl autistici.org`
 
 - resolve a onion address:
 `sudo torjail dig wi7qkxyrdpu5cmvr.onion`
@@ -40,21 +71,20 @@ if you find a way to deanonimize torjail, write us!
 - get an onion webserver content via tor:
 `sudo torjail curl wi7qkxyrdpu5cmvr.onion`
 
-- open a firefox with user $USER that could only reach internet via tor:
-`./torjail -u $USER firefox -P /tmp/tmpprofile`
-
+- open a firefox that could reach internet via tor only:
+`sudo torjail firefox -P /tmp/tmpprofile`
 > warning: firefox has a flag that block .onion resolution by default -> change it using about:config network.dns.blockDotOnion
 
 - get a shell that could not reach internet (only via tor)
-`./torjail -s -u $USER`
+`sudo torjail -s`
 
 - custom network configuration:
-`./torjail -r 10.10.1.1 10.10.1.2 24 ls`
+`sudo torjail -r 10.10.1.1 10.10.1.2 24 ls`
 
 - create a namespace called $NS in verbose mode:
-`./torjail -n $NS -v ls`
+`sudo torjail -n $NS -v ls`
 
-- keep the existing /etc/resolv.conf after the execution:
+- keep the namespace after exit so we can start another program in same ns 
 `./torjail -k ls`
 
-> in order to support the correct routing, /etc/resolv.conf is mounted to a temporary file inside the namespace, generated by torjail.
+> in order to support the correct name resolution, /etc/resolv.conf is mounted to a temporary file inside the namespace, generated by torjail.
