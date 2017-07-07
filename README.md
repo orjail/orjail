@@ -41,14 +41,14 @@ Options:
     -v, --verbose      Verbose mode.
     -k, --keep         Don't delete namespace and don't kill tor after the execution.
     -s, --shell        Execute a shell.
-    -t, --tor <tor_host> <tor_trans_port> <tor_dns_port>
-                       Use an external tor instance (need DNSPost and TransPort enabled)
+    -t, --tor-exec     Executes a tor instance with .torrc.example configuration. Disabled by default.
     -r, --routing <ip_host> <ip_ns> <netmask>
                        Set custom IPs. By default 10.200.1.1/10.200.1.2/24.
 ```
 
 - an example to see what are we talking about:
-```$ sudo torjail ifconfig
+```
+$ sudo torjail ifconfig
 out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 10.200.1.2  netmask 255.255.255.0  broadcast 0.0.0.0
         inet6 fe80::6439:afff:febc:c9b5  prefixlen 64  scopeid 0x20<link>
