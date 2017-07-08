@@ -341,6 +341,7 @@ if [ $? -ne 0 ]; then
     TransListenAddress $IPHOST
     DNSPort 5353
     DNSListenAddress $IPHOST
+    SOCKSPort 0
     " > $TORCONFIGFILE
 
     # executing tor
