@@ -361,7 +361,7 @@ if [ $? -ne 0 ]; then
 
     # executing tor
     print G " * Executing TOR..."
-    tor --quiet -f $TORCONFIGFILE &> /dev/null &
+    $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
     TORPID=$!
   fi
 else
