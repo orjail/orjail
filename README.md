@@ -1,6 +1,6 @@
 > ### :warning: WARNING
 > torjail is under development, use at your own risk.  
-> if you find a bug, please create an [issue](https://github.com/lesion/torjail/issues).
+> if you find a bug, please create an [issue](https://github.com/torjail/torjail/issues).
 
 ## why?
 we've tried to deanonimize a program executed in torsocks environemnt and that was not so difficult, as torsocks use LD_PRELOAD so you only need to statically compile your stuff.
@@ -18,7 +18,7 @@ that force traffic generated from inside torjail to only exit via tor (including
 inside torjail you'll be in another pid namespace (this way you cannot switch
 namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).  
 
-**if you find a way to deanonimize a program running inside torjail** (also a shell with root privileges) would be nice to [share it with us](https://github.com/lesion/torjail/issues)
+**if you find a way to deanonimize a program running inside torjail** (also a shell with root privileges) would be nice to [share it with us](https://github.com/torjail/torjail/issues)
 
 
 ## additional info
