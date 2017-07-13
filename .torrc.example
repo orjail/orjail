@@ -1,12 +1,10 @@
-# Start tor with `tor -f $thisfile`
+# This is an example of torrc configuration
+# if you want torjail to use your local tor instance.
 
-#Log notice file /home/les/isolate.log
+# To make torjail works as expected you need at least this configuration:
 
-VirtualAddrNetwork 10.200.1.1/10
+TransPort 9040
+DNSPort 5354
+
 AutomapHostsSuffixes .onion,.exit
 AutomapHostsOnResolve 1
-TransPort 9040
-TransListenAddress 10.200.1.1
-DNSPort 5353
-DNSListenAddress 10.200.1.1
-
