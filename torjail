@@ -76,6 +76,8 @@ cleanup() {
     print G " * Keeping the namespace $NAME"
   else
     if [ "$TOREXEC" != n ]; then
+      print G " * Remove tor temporary configuration"
+      rm $TORCONFIGFILE
       print G " * Killing tor process $TORPID"
       kill -9 $TORPID &> /dev/null
       wait $! &> /dev/null
