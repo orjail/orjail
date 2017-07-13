@@ -85,20 +85,20 @@ cleanup() {
     fi
 
     print G " * Disable martian packet "
-		echo 0 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
+    echo 0 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
 
-	  print G " * Removing in-$NAME network interface"
-	  ip link del in-$NAME
+    print G " * Removing in-$NAME network interface"
+    ip link del in-$NAME
 
     print G " * Delete network namespace $NAME"
     ip netns delete $NAME
 
-	  print G " * Cleaning up iptables rules..."
-	  iptables -t nat -D  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
-	           --to-destination $TORHOST:5354
-	  iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
-	           --to-destination $TORHOST:9040
-	  iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
+    print G " * Cleaning up iptables rules..."
+    iptables -t nat -D  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
+             --to-destination $TORHOST:5354
+    iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
+             --to-destination $TORHOST:9040
+    iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
   fi
 
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
@@ -133,7 +133,7 @@ help_and_exit() {
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -s, --shell        Execute a shell."
-  print N "    -t, --tor     			<tor_host>"
+  print N "    -t, --tor          Use your local tor instance instead (see .torrc.example)."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   exit $1
@@ -247,7 +247,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ "$TOREXEC" != n ]; then
-	TORHOST=$IPHOST
+  TORHOST=$IPHOST
 fi
 
 if [[ $EUID -ne 0 ]]; then
@@ -304,7 +304,7 @@ if [ $? -ne 0 ]; then
     die "Failed to add a veth interface"
 
   print G " * Enable martian packet "
-	echo 1 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
+  echo 1 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
@@ -330,7 +330,7 @@ if [ $? -ne 0 ]; then
     die "Failed to set up the network routing"
 
   # resolve with tor
-  print G " * Resolving via TOR... $TORHOST"
+  print G " * Resolving via TOR@$TORHOST"
   iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
         --to-destination $TORHOST:5354 || \
     die "Failed to configure iptable for routing the tor DNS lookup"
