@@ -354,7 +354,7 @@ if [ $? -ne 0 ]; then
     AutomapHostsOnResolve 1
     TransPort 9040
     TransListenAddress $IPHOST
-    DNSPort 5353
+    DNSPort 5354
     DNSListenAddress $IPHOST
     SOCKSPort 0
     " > $TORCONFIGFILE
