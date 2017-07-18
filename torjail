@@ -7,7 +7,6 @@ NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 VERBOSE=
 TOREXEC=
-TORHOST=
 KEEP=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -75,17 +74,15 @@ cleanup() {
     print G " * Keeping the tor process $TORPID running"
     print G " * Keeping the namespace $NAME"
   else
-    if [ "$TOREXEC" != n ]; then
-      print G " * Remove tor temporary configuration"
-      rm $TORCONFIGFILE
-      print G " * Killing tor process $TORPID"
-      kill -9 $TORPID &> /dev/null
-      wait $! &> /dev/null
-      print G " * Killed $TORPID"
-    fi
+    print G " * Remove tor temporary configuration"
+    rm $TORCONFIGFILE
+    print G " * Killing tor process $TORPID"
+    kill -9 $TORPID &> /dev/null
+    wait $! &> /dev/null
+    print G " * Killed $TORPID"
 
-    print G " * Disable martian packet "
-    echo 0 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
+    print G " * Removing tor DataDirectory: /tmp/torjail-$NAME"
+		rm -fr /tmp/torjail-$NAME
 
     print G " * Removing in-$NAME network interface"
     ip link del in-$NAME
@@ -95,9 +92,9 @@ cleanup() {
 
     print G " * Cleaning up iptables rules..."
     iptables -t nat -D  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
-             --to-destination $TORHOST:5354
+             --to-destination $IPHOST:5354
     iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
-             --to-destination $TORHOST:9040
+             --to-destination $IPHOST:9040
     iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
   fi
 
@@ -132,8 +129,8 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
+  print N "    -f, --firejail     Use firejail as a security container (sudo torjail -f pidgin)."
   print N "    -s, --shell        Execute a shell."
-  print N "    -t, --tor          Use your local tor instance instead (see .torrc.example)."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   exit $1
@@ -246,10 +243,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [ "$TOREXEC" != n ]; then
-  TORHOST=$IPHOST
-fi
-
 if [[ $EUID -ne 0 ]]; then
    printv R "$DEFAULTNAME must be run as root."
    exit 1
@@ -259,9 +252,6 @@ fi
 if [ "$1" = "" ]; then
   help_and_exit 1
 fi
-
-# Tor
-# Colors
 
 # Check linux kernel
 if [ "$(uname)" != Linux ]; then
@@ -303,9 +293,6 @@ if [ $? -ne 0 ]; then
   ip link add in-$NAME type veth peer name out-$NAME || \
     die "Failed to add a veth interface"
 
-  print G " * Enable martian packet "
-  echo 1 > /proc/sys/net/ipv4/conf/in-$NAME/route_localnet
-
   # Add out to NS.
   print G " * Sharing the veth interface..."
   ip link set out-$NAME netns $NAME || \
@@ -330,40 +317,38 @@ if [ $? -ne 0 ]; then
     die "Failed to set up the network routing"
 
   # resolve with tor
-  print G " * Resolving via TOR@$TORHOST"
+  print G " * Resolving via TOR@"
   iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
-        --to-destination $TORHOST:5354 || \
+        --to-destination $IPHOST:5354 || \
     die "Failed to configure iptable for routing the tor DNS lookup"
 
   # traffic througth tor
   print G " * Traffic via TOR..."
   iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
-           --to-destination $TORHOST:9040 || \
+           --to-destination $IPHOST:9040 || \
     die "Failed to configure iptable for routing the network traffic"
   iptables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
-  if [ "$TOREXEC" != n ]; then
-    # executing tor
-    print G " * Creating the TOR configuration file..."
-    TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-    echo "
-    DataDirectory /tmp/torjail-$NAME
-    VirtualAddrNetwork $IPNETNS/16
-    AutomapHostsSuffixes .onion,.exit
-    AutomapHostsOnResolve 1
-    TransPort 9040
-    TransListenAddress $IPHOST
-    DNSPort 5354
-    DNSListenAddress $IPHOST
-    SOCKSPort 0
-    " > $TORCONFIGFILE
+  # executing tor
+  print G " * Creating the TOR configuration file..."
+  TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+  echo "
+  DataDirectory /tmp/torjail-$NAME
+  VirtualAddrNetwork $IPNETNS/16
+  AutomapHostsSuffixes .onion,.exit
+  AutomapHostsOnResolve 1
+  TransPort 9040
+  TransListenAddress $IPHOST
+  DNSPort 5354
+  DNSListenAddress $IPHOST
+  SOCKSPort 0
+  " > $TORCONFIGFILE
 
-    # executing tor
-    print G " * Executing TOR..."
-    $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
-    TORPID=$!
-  fi
+  # executing tor
+  print G " * Executing TOR..."
+  tor --quiet -f $TORCONFIGFILE &> /dev/null &
+  TORPID=$!
 else
   print Y "$NAME network namespace already exists!"
   KEEP=y
