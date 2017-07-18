@@ -5,6 +5,7 @@ REALPATH=`dirname $REALPATH`
 DEFAULTNAME=torjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
+USEFIREJAIL=n
 VERBOSE=
 TOREXEC=
 KEEP=
@@ -220,10 +221,8 @@ while [[ $# -gt 0 ]]; do
       fi
       ;;
 
-    -t|--tor)
-      TOREXEC=n
-      TORHOST=127.0.0.1
-      
+    -f|--firejail)
+			USEFIREJAIL=y
       ;;
 
     -s|--shell)
@@ -259,13 +258,12 @@ if [ "$(uname)" != Linux ]; then
   exit 1
 fi
 
-# Check tor running
-TORBIN=
-if [ "$TOREXEC" != n ]; then
-    TORBIN=tor
+FIREJAILBIN=
+if [ $USEFIREJAIL = y ]; then
+	FIREJAILBIN=firejail
 fi
 
-for cmd in ip iptables $TORBIN; do
+for cmd in ip iptables tor $FIREJAILBIN; do
   if [ "$(whereis $cmd | cut -d: -f2)" = '' ]; then
     printv R "No $cmd tools found"
     exit 1
@@ -359,11 +357,15 @@ print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
 echo "nameserver $IPHOST" > $RESOLVEFILE || die "Failed to create $RESOLVEFILE"
 chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
-# run your shit
-ip netns exec $NAME \
-  unshare --ipc --fork --pid --mount --mount-proc \
-  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
-  die "Failed to execute the inside part of this script"
+# use firejail as security container
+if [ $USEFIREJAIL = y ]; then
+	sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME $*
+else #or without
+	ip netns exec $NAME \
+	  unshare --ipc --fork --pid --mount --mount-proc \
+	  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
+	  die "Failed to execute the inside part of this script"
+fi
 
 # clean some shit
 cleanup
