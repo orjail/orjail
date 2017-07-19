@@ -83,7 +83,7 @@ cleanup() {
     print G " * Killed $TORPID"
 
     print G " * Removing tor DataDirectory: /tmp/torjail-$NAME"
-		rm -fr /tmp/torjail-$NAME
+    rm -fr /tmp/torjail-$NAME
 
     print G " * Removing in-$NAME network interface"
     ip link del in-$NAME
@@ -97,10 +97,10 @@ cleanup() {
     iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
              --to-destination $IPHOST:9040
     iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
-	  iptables -D INPUT -i in-$NAME -j REJECT
-	  iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-	  iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
-	  iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
+    iptables -D INPUT -i in-$NAME -j REJECT
+    iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+    iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+    iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
 
   fi
 
@@ -227,7 +227,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     -f|--firejail)
-			USEFIREJAIL=y
+      USEFIREJAIL=y
       ;;
 
     -s|--shell)
@@ -265,7 +265,7 @@ fi
 
 FIREJAILBIN=
 if [ $USEFIREJAIL = y ]; then
-	FIREJAILBIN=firejail
+  FIREJAILBIN=firejail
 fi
 
 for cmd in ip iptables tor $FIREJAILBIN; do
@@ -371,12 +371,12 @@ chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
-	sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME $*
+  sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME $*
 else #or without
-	ip netns exec $NAME \
-	  unshare --ipc --fork --pid --mount --mount-proc \
-	  $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
-	  die "Failed to execute the inside part of this script"
+  ip netns exec $NAME \
+    unshare --ipc --fork --pid --mount --mount-proc \
+    $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
+    die "Failed to execute the inside part of this script"
 fi
 
 # clean some shit
