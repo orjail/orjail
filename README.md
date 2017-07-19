@@ -3,12 +3,13 @@
 > if you find a bug, please create an [issue](https://github.com/torjail/torjail/issues).
 
 ## why?
-we've tried to deanonimize a program executed in torsocks environemnt and that was not so difficult, as torsocks use LD_PRELOAD so you only need to statically compile your stuff.
+we've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
 as [whonix](https://www.whonix.org/) is sometimes too much, the idea is to experiment with [linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) and learn by doing something usefull (at least for us).
 
 ## requirements
 1. a linux kernel supporting namespaces (you have it since 2008)
 1. tor installed
+1. [firejail](https://firejail.wordpress.com/) (optional)
 
 
 ## how it works
@@ -24,8 +25,7 @@ namespace), and another mount namespace (we use this to show a different /etc/re
 ## additional info
 1. `torjail` needs root permission to run
 1. `torjail` runs your program as your user
-1. `torjail` will launch a tor instance with a default configuration (but you can specify your own instance with `-t`)
-1. other questions?
+1. `torjail` will launch a tor instance binded to torjail interface
 
 
 ## usage examples: 
@@ -72,5 +72,7 @@ out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 #### keep the namespace after exit so we can start another program in same ns 
 `sudo torjail -k ls`
 
+#### Use `firejail` as a security sandbox to join torjail network namespace
+`sudo torjail -f thunderbird`
 
 Made with :heart: by [_TO*hacklab](https://autistici.org/underscore)
