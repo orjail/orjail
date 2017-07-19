@@ -97,7 +97,7 @@ cleanup() {
     iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
              --to-destination $IPHOST:9040
     iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
-    iptables -D INPUT -i in-$NAME -j REJECT
+    iptables -D INPUT -i in-$NAME -j DROP
     iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
     iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
     iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
@@ -338,7 +338,7 @@ if [ $? -ne 0 ]; then
   iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
   iptables -A INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
   iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
-  iptables -A INPUT -i in-$NAME -j REJECT
+  iptables -A INPUT -i in-$NAME -j DROP
 
   # executing tor
   print G " * Creating the TOR configuration file..."
