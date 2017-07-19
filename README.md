@@ -25,7 +25,7 @@ namespace), and another mount namespace (we use this to show a different /etc/re
 ## additional info
 1. `torjail` needs root permission to run
 1. `torjail` runs your program as your user
-1. `torjail` will launch a tor instance binded to torjail interface
+1. `torjail` will launch a tor instance bound to torjail interface
 
 
 ## usage examples: 
