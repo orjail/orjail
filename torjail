@@ -97,6 +97,11 @@ cleanup() {
     iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
              --to-destination $IPHOST:9040
     iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
+	  iptables -D INPUT -i in-$NAME -j REJECT
+	  iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+	  iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+	  iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
+
   fi
 
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
@@ -327,6 +332,13 @@ if [ $? -ne 0 ]; then
     die "Failed to configure iptable for routing the network traffic"
   iptables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
+
+  # REJECT all traffic coming from torjail
+  # this is needed to avoid reaching other interfaces
+  iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+  iptables -A INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+  iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
+  iptables -A INPUT -i in-$NAME -j REJECT
 
   # executing tor
   print G " * Creating the TOR configuration file..."
