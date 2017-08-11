@@ -252,7 +252,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-TORBIN=$(which tor 2>/dev/null1)
+TORBIN=$(which tor 2>/dev/null)
 if [[ $? -ne 0 ]]; then
   print R "Can't locate tor executable. You might want to set TOBIN manually";
   exit 1
