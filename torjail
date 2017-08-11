@@ -7,7 +7,7 @@ NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 USEFIREJAIL=n
 VERBOSE=
-TOREXEC=
+TORBIN=
 KEEP=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
@@ -254,7 +254,7 @@ fi
 
 TORBIN=$(which tor 2>/dev/null)
 if [[ $? -ne 0 ]]; then
-  print R "Can't locate tor executable. You might want to set TOBIN manually";
+  print R "Can't locate tor executable.";
   exit 1
 fi
 
