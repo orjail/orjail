@@ -252,6 +252,12 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+TORBIN=$(which tor 2>/dev/null1)
+if [[ $? -ne 0 ]]; then
+  print R "Can't locate tor executable. You might want to set TOBIN manually";
+  exit 1
+fi
+
 # No arguments, no party
 if [ "$1" = "" ]; then
   help_and_exit 1
@@ -357,7 +363,7 @@ if [ $? -ne 0 ]; then
 
   # executing tor
   print G " * Executing TOR..."
-  tor --quiet -f $TORCONFIGFILE &> /dev/null &
+  $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
   TORPID=$!
 else
   print Y "$NAME network namespace already exists!"
