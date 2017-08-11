@@ -348,18 +348,31 @@ if [ $? -ne 0 ]; then
 
   # executing tor
   print G " * Creating the TOR configuration file..."
+
+  # automatically detect tor version and use appropriate syntax
+  TORVERSION="$($TORBIN --version|egrep -o ' ([0-9.]+)'|xargs)"
+  print G "tor version is $TORVERSION"
+
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  echo "
-  DataDirectory /tmp/torjail-$NAME
-  VirtualAddrNetwork $IPNETNS/16
-  AutomapHostsSuffixes .onion,.exit
-  AutomapHostsOnResolve 1
-  TransPort 9040
-  TransListenAddress $IPHOST
-  DNSPort 5354
-  DNSListenAddress $IPHOST
-  SOCKSPort 0
-  " > $TORCONFIGFILE
+
+  echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE
+  echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE
+  echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE
+
+  # because some options were deprecated in 0.2.3+
+  if [[ "$TORVERSION" > "0.2.3" ]]; then
+     echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> $TORCONFIGFILE
+     echo "TransPort $IPHOST:9040"              >> $TORCONFIGFILE
+     echo "DNSPort $IPHOST:5354"                >> $TORCONFIGFILE
+  else
+     echo "VirtualAddrNetwork $IPNETNS/16"      >> $TORCONFIGFILE
+     echo "TransListenAddress $IPHOST"          >> $TORCONFIGFILE
+     echo "TransPort 9040"                      >> $TORCONFIGFILE
+     echo "DNSListenAddress $IPHOST"            >> $TORCONFIGFILE
+     echo "DNSPort 5354"                        >> $TORCONFIGFILE
+  fi
+
+  echo "SOCKSPort 0"                            >> $TORCONFIGFILE
 
   # executing tor
   print G " * Executing TOR..."
