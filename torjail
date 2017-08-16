@@ -9,6 +9,8 @@ USEFIREJAIL=n
 VERBOSE=
 TORBIN=
 KEEP=
+HIDDENSERVICE=
+HIDDENSERVICEDIR=
 IPHOSTDEFAULT=10.200.1.1
 IPHOST=$IPHOSTDEFAULT
 IPNETNSDEFAULT=10.200.1.2
@@ -98,6 +100,10 @@ cleanup() {
              --to-destination $IPHOST:9040
     iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
     iptables -D INPUT -i in-$NAME -j DROP
+    if [[ $HIDDENSERVICE = y ]]; then
+      iptables -D INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
+      iptables -D INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+    fi
     iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
     iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
     iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
@@ -208,6 +214,17 @@ while [[ $# -gt 0 ]]; do
 
     -k|--keep)
       KEEP=y
+      ;;
+
+    -H,--hidden)
+      HIDDENSERVICE=y
+      HSERVICEPORT=$2
+      shift
+      ;;
+
+    -d,--hiddendir)
+      HIDDENSERVICEDIR=$2
+      shift
       ;;
 
     -r|--routing)
@@ -344,6 +361,10 @@ if [ $? -ne 0 ]; then
   iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
   iptables -A INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
   iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
+  if [[ $HIDDENSERVICE = y ]]; then
+    iptables -A INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+    iptables -A INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
+  fi
   iptables -A INPUT -i in-$NAME -j DROP
 
   # executing tor
@@ -358,6 +379,16 @@ if [ $? -ne 0 ]; then
   echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE
   echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE
   echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE
+  echo "PidFile      /tmp/torjail-$NAME/pid"    >> $TORCONFIGFILE
+
+  if [[ $HIDDENSERVICE = y ]]; then
+    if [[ $HIDDENSERVICEDIR ]]; then
+      echo "HiddenServiceDir $(realpath $HIDDENSERVICEDIR)"       >> $TORCONFIGFILE
+    else
+      echo "HiddenServiceDir /tmp/torjail-$NAME"  >> $TORCONFIGFILE
+    fi
+    echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> $TORCONFIGFILE
+  fi
 
   # because some options were deprecated in 0.2.3+
   if [[ "$TORVERSION" > "0.2.3" ]]; then
