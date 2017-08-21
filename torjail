@@ -143,6 +143,10 @@ help_and_exit() {
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -f, --firejail     Use firejail as a security container (sudo torjail -f pidgin)."
+  print N "    -H, --hidden <port>"
+  print N "                       Enable tor as an hidden service forwarding request from/to specified port."
+  print N "    -d, --hiddendir <dir>"
+  print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
   print N "    -s, --shell        Execute a shell."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
@@ -217,15 +221,25 @@ while [[ $# -gt 0 ]]; do
       KEEP=y
       ;;
 
-    -H,--hidden)
+    -H|--hidden)
       HIDDENSERVICE=y
-      HSERVICEPORT=$2
+      HSERVICEPORT="$2"
       shift
+
+      if [ "$HSERVICEPORT" = "" ]; then
+        printv R "$key requires an argument."
+        exit 1
+      fi
       ;;
 
-    -d,--hiddendir)
-      HIDDENSERVICEDIR=$2
+    -d|--hiddendir)
+      HIDDENSERVICEDIR="$2"
       shift
+
+      if [ "$HIDDENSERVICEDIR" = "" ]; then
+        printv R "$key requires an argument."
+        exit 1
+      fi
       ;;
 
     -r|--routing)
