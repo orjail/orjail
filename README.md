@@ -43,7 +43,10 @@ out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 ```
 
-#### getring an homepage content with curl via tor
+#### run an hidden service inside torjail (you'll find your address inside `examples/hostname`)
+`sudo torjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
+
+#### getting an homepage content with curl via tor
 `sudo torjail curl autistici.org > autistici.org `
 
 #### same as before with another user
