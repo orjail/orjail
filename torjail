@@ -73,6 +73,7 @@ printvn() {
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
+  TORPID=$(cat /tmp/torjail-$NAME/pid)
   if [ "$KEEP" = y ]; then
     print G " * Keeping the tor process $TORPID running"
     print G " * Keeping the namespace $NAME"
@@ -343,7 +344,7 @@ if [ $? -ne 0 ]; then
     die "Failed to set up the network routing"
 
   # resolve with tor
-  print G " * Resolving via TOR@"
+  print G " * Resolving via TOR"
   iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
         --to-destination $IPHOST:5354 || \
     die "Failed to configure iptable for routing the tor DNS lookup"
@@ -372,9 +373,10 @@ if [ $? -ne 0 ]; then
 
   # automatically detect tor version and use appropriate syntax
   TORVERSION="$($TORBIN --version|egrep -o ' ([0-9.]+)'|xargs)"
-  print G "tor version is $TORVERSION"
+  print G " * tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+  chown $USERNAME $TORCONFIGFILE
 
   echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE
   echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE
@@ -407,8 +409,7 @@ if [ $? -ne 0 ]; then
 
   # executing tor
   print G " * Executing TOR..."
-  $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
-  TORPID=$!
+  sudo -u $USERNAME $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
 else
   print Y "$NAME network namespace already exists!"
   KEEP=y
