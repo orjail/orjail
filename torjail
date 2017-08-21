@@ -73,7 +73,7 @@ printvn() {
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
-  TORPID=$(cat /tmp/torjail-$NAME/pid)
+  TORPID=$(cat /tmp/torjail-$NAME/pid &> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keeping the tor process $TORPID running"
     print G " * Keeping the namespace $NAME"
@@ -396,6 +396,7 @@ if [ $? -ne 0 ]; then
   echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE
   echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE
   echo "PidFile      /tmp/torjail-$NAME/pid"    >> $TORCONFIGFILE
+  echo "User         $USERNAME"                 >> $TORCONFIGFILE
 
   if [[ $HIDDENSERVICE = y ]]; then
     if [[ $HIDDENSERVICEDIR ]]; then
@@ -423,7 +424,7 @@ if [ $? -ne 0 ]; then
 
   # executing tor
   print G " * Executing TOR..."
-  sudo -u $USERNAME $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
+  $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
 else
   print Y "$NAME network namespace already exists!"
   KEEP=y
