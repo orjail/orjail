@@ -380,7 +380,8 @@ if [ $? -ne 0 ]; then
     iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
     iptables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
   fi
-  iptables -I INPUT -i in-$NAME -j DROP
+  # while we inserted the rules above, the DROP rule must be appended instead
+  iptables -A INPUT -i in-$NAME -j DROP
 
   # executing tor
   print G " * Creating the TOR configuration file..."
