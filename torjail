@@ -373,14 +373,14 @@ if [ $? -ne 0 ]; then
 
   # REJECT all traffic coming from torjail
   # this is needed to avoid reaching other interfaces
-  iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-  iptables -A INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
-  iptables -A INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
+  iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+  iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+  iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -A INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
-    iptables -A INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
+    iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+    iptables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
   fi
-  iptables -A INPUT -i in-$NAME -j DROP
+  iptables -I INPUT -i in-$NAME -j DROP
 
   # executing tor
   print G " * Creating the TOR configuration file..."
