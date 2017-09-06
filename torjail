@@ -107,8 +107,6 @@ cleanup() {
     fi
     iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
     iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
-  # iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
-
   fi
 
   print G " * Removing the temporary resolve file $RESOLVEFILE..."
@@ -374,7 +372,6 @@ if [ $? -ne 0 ]; then
   # REJECT all traffic coming from torjail
   # this is needed to avoid reaching other interfaces
   iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-# iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
   iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 9040 -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
     iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
