@@ -73,7 +73,7 @@ printvn() {
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
-  TORPID=$(cat /tmp/torjail-$NAME/pid &> /dev/null)
+  TORPID=$(cat /tmp/torjail-$NAME/pid)
   if [ "$KEEP" = y ]; then
     print G " * Keeping the tor process $TORPID running"
     print G " * Keeping the namespace $NAME"
