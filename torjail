@@ -256,7 +256,7 @@ while [[ $# -gt 0 ]]; do
       if [ "$IPHOST" = "" ] ||
          [ "$IPNETNS" = "" ] ||
          [ "$NETMASK" = "" ]; then
-        printv R "$key requires an 3 arguments."
+        printv R "$key requires 3 arguments."
         exit 1
       fi
       ;;
