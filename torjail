@@ -17,6 +17,7 @@ IPNETNSDEFAULT=10.200.1.2
 IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
 NETMASK=$NETMASKDEFAULT
+SUDOBIN="$(type -P sudo)"
 
 # Functions
 # ~~~~~~~~~
@@ -140,7 +141,7 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
-  print N "    -f, --firejail     Use firejail as a security container (sudo torjail -f pidgin)."
+  print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN torjail -f pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -175,7 +176,7 @@ if [ "$1" = "--inside" ]; then
 
   print G " * Executing..."
 
-  sudo -u $USERNAME "$@" || error "Execution failed."
+  ${SUDOBIN:+$SUDOBIN -u $USERNAME} "$@" || error "Execution failed."
   exit
 fi
 
@@ -437,7 +438,7 @@ chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
-  sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME "$@"
+  ${SUDOBIN:+$SUDOBIN -u $USERNAME} firejail --dns=$IPHOST --netns=$NAME "$@"
 else #or without
   ip netns exec $NAME \
     unshare --ipc --fork --pid --mount --mount-proc \
