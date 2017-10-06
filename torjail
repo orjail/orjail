@@ -319,7 +319,7 @@ done
 ! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
-ip netns list | grep -e ^$NAME\  &> /dev/null
+ip netns list | grep -e \\b$NAME\\b  &> /dev/null
 if [ $? -ne 0 ]; then
   printv G "It seems that you don't have the namespace $NAME."
   printvn Y "Do you want to create it? [y/n] "
