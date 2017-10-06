@@ -452,7 +452,7 @@ if [ $USEFIREJAIL = y ]; then
 else #or without
   ip netns exec $NAME \
     unshare --ipc --fork --pid --mount --mount-proc \
-    $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
+    "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
     die "Failed to execute the inside part of this script"
 fi
 
