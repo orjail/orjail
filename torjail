@@ -114,9 +114,9 @@ cleanup() {
   rm "$RESOLVEFILE"
 }
 
-# Handler of the interrupt signal
+# Handler of breakout signals
 interrupted() {
-  printv R " * Received stop signal"
+  printv R " * Received breakout signal"
   cleanup
   exit 1
 }
@@ -183,8 +183,8 @@ fi
 # The tool
 # ~~~~~~~~
 
-# Call cleanup on ctrl-c (SIGINT)
-trap interrupted SIGINT
+# Call cleanup on ctrl-c (SIGINT) and more breakout signals
+trap interrupted HUP INT QUIT TERM ABRT
 
 # Arguments check
 while [[ $# -gt 0 ]]; do
