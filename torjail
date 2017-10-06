@@ -282,7 +282,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-TORBIN=$(which tor 2>/dev/null)
+TORBIN=$(type -P tor 2>/dev/null)
 if [[ $? -ne 0 ]]; then
   print R "Can't locate tor executable.";
   exit 1
@@ -304,12 +304,14 @@ if [ $USEFIREJAIL = y ]; then
   FIREJAILBIN=firejail
 fi
 
+err=0
 for cmd in ip iptables tor $FIREJAILBIN; do
-  if [ "$(whereis $cmd | cut -d: -f2)" = '' ]; then
-    printv R "No $cmd tools found"
-    exit 1
+  if ! [ file = "$(type -t $cmd 2>/dev/null)" ]; then
+    printv R "$cmd isn't a command file"
+    err=1
   fi
 done
+! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
 ip netns list | grep -e ^$NAME\  &> /dev/null
