@@ -175,7 +175,7 @@ if [ "$1" = "--inside" ]; then
 
   print G " * Executing..."
 
-  sudo -u $USERNAME $* || error "Execution failed."
+  sudo -u $USERNAME "$@" || error "Execution failed."
   exit
 fi
 
@@ -435,11 +435,11 @@ chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
-  sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME $*
+  sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME "$@"
 else #or without
   ip netns exec $NAME \
     unshare --ipc --fork --pid --mount --mount-proc \
-    $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
+    $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
     die "Failed to execute the inside part of this script"
 fi
 
