@@ -12,11 +12,17 @@ KEEP=
 HIDDENSERVICE=
 HIDDENSERVICEDIR=
 IPHOSTDEFAULT=10.200.1.1
+IPHOSTDEFAULT6="fd00::1"
 IPHOST=$IPHOSTDEFAULT
+IPHOST6=$IPHOSTDEFAULT6
 IPNETNSDEFAULT=10.200.1.2
+IPNETNSDEFAULT6="fd00::2"
 IPNETNS=$IPNETNSDEFAULT
+IPNETNS6=$IPNETNSDEFAULT6
 NETMASKDEFAULT=24
+NETMASKDEFAULT6=64
 NETMASK=$NETMASKDEFAULT
+NETMASK6=$NETMASKDEFAULT6
 
 # Functions
 # ~~~~~~~~~
@@ -337,12 +343,16 @@ if [ $? -ne 0 ]; then
   ip link set out-$NAME netns $NAME || \
     die "Failed to assign veth interface to the namespace"
 
+  ip -6 addr add $IPHOST6/$NETMASK6 dev in-$NAME
+
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
   ip addr add $IPHOST/$NETMASK dev in-$NAME || \
     die "Failed to assign veth interface to the host"
   ip link set in-$NAME up || die "Failed to set up the veth interface"
 
+
+  ip netns exec $NAME ip -6 addr add $IPNETNS6/$NETMASK6 dev out-$NAME
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
   ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME || \
@@ -350,35 +360,49 @@ if [ $? -ne 0 ]; then
   ip netns exec $NAME ip link set out-$NAME up || \
     die "Failed to assign an IP to the veth interface"
 
+  echo "ip netns exec $NAME ip -6 route add default via $IPHOST6"
+  ip netns exec $NAME ip -6 route add default dev out-$NAME via $IPHOST6
   # default route
   print G " * Default routing up..."
   ip netns exec $NAME ip route add default via $IPHOST || \
     die "Failed to set up the network routing"
 
+  sysctl -w net.ipv6.conf.all.forwarding=1
+
   # resolve with tor
   print G " * Resolving via TOR"
+  ip6tables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST6 --dport 53 -j DNAT --to-destination $IPHOST6:5354
   iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
         --to-destination $IPHOST:5354 || \
     die "Failed to configure iptable for routing the tor DNS lookup"
 
   # traffic througth tor
   print G " * Traffic via TOR..."
+  ip6tables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
+           --to-destination $IPHOST6:9040
   iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
            --to-destination $IPHOST:9040 || \
     die "Failed to configure iptable for routing the network traffic"
+  ip6tables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT
   iptables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
   # REJECT all traffic coming from torjail
   # this is needed to avoid reaching other interfaces
+  ip6tables -I INPUT -i in-$NAME -p udp --destination $IPHOST6 --dport 5354 -j ACCEPT
   iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+
   iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+  ip6tables -I INPUT -i in-$NAME -p tcp --destination $IPHOST6 --dport 9040 -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
     iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+    ip6tables -I INPUT -i in-$NAME -p tcp --source $IPNETNS6 --sport $HSERVICEPORT -j ACCEPT
     iptables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
+    ip6tables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS6 --dport $HSERVICEPORT -j ACCEPT
   fi
   # while we inserted the rules above, the DROP rule must be appended instead
   iptables -A INPUT -i in-$NAME -j DROP
+  ip6tables -A INPUT -i in-$NAME -j DROP
 
   # executing tor
   print G " * Creating the TOR configuration file..."
@@ -409,7 +433,9 @@ if [ $? -ne 0 ]; then
   if [[ "$TORVERSION" > "0.2.3" ]]; then
      echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> $TORCONFIGFILE
      echo "TransPort $IPHOST:9040"              >> $TORCONFIGFILE
+     echo "TransPort [$IPHOST6]:9040"              >> $TORCONFIGFILE
      echo "DNSPort $IPHOST:5354"                >> $TORCONFIGFILE
+     echo "DNSPort [$IPHOST6]:5354"                >> $TORCONFIGFILE
   else
      echo "VirtualAddrNetwork $IPNETNS/16"      >> $TORCONFIGFILE
      echo "TransListenAddress $IPHOST"          >> $TORCONFIGFILE
