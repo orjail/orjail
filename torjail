@@ -17,6 +17,7 @@ IPNETNSDEFAULT=10.200.1.2
 IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
 NETMASK=$NETMASKDEFAULT
+SUDOBIN="$(type -P sudo)"
 
 # Functions
 # ~~~~~~~~~
@@ -113,9 +114,9 @@ cleanup() {
   rm "$RESOLVEFILE"
 }
 
-# Handler of the interrupt signal
+# Handler of breakout signals
 interrupted() {
-  printv R " * Received stop signal"
+  printv R " * Received breakout signal"
   cleanup
   exit 1
 }
@@ -140,7 +141,7 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
-  print N "    -f, --firejail     Use firejail as a security container (sudo torjail -f pidgin)."
+  print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN torjail -f pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -175,15 +176,19 @@ if [ "$1" = "--inside" ]; then
 
   print G " * Executing..."
 
-  sudo -u $USERNAME $* || error "Execution failed."
+  if [ "$SUDOBIN" ]; then
+    $SUDOBIN -u $USERNAME "$@"
+  else
+    su $USERNAME -c "$*"
+  fi || error "Execution failed."
   exit
 fi
 
 # The tool
 # ~~~~~~~~
 
-# Call cleanup on ctrl-c (SIGINT)
-trap interrupted SIGINT
+# Call cleanup on ctrl-c (SIGINT) and more breakout signals
+trap interrupted HUP INT QUIT TERM ABRT
 
 # Arguments check
 while [[ $# -gt 0 ]]; do
@@ -251,7 +256,7 @@ while [[ $# -gt 0 ]]; do
       if [ "$IPHOST" = "" ] ||
          [ "$IPNETNS" = "" ] ||
          [ "$NETMASK" = "" ]; then
-        printv R "$key requires an 3 arguments."
+        printv R "$key requires 3 arguments."
         exit 1
       fi
       ;;
@@ -269,6 +274,18 @@ while [[ $# -gt 0 ]]; do
       help_and_exit 0
     ;;
 
+    # End my options
+    --)
+      shift
+      break
+    ;;
+
+    # Illegal options
+    -*)
+      printv R "$key unknown option."
+      exit 1
+    ;;
+
     # The rest
     *)
     break
@@ -282,7 +299,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-TORBIN=$(which tor 2>/dev/null)
+TORBIN=$(type -P tor 2>/dev/null)
 if [[ $? -ne 0 ]]; then
   print R "Can't locate tor executable.";
   exit 1
@@ -304,15 +321,17 @@ if [ $USEFIREJAIL = y ]; then
   FIREJAILBIN=firejail
 fi
 
-for cmd in ip iptables tor $FIREJAILBIN; do
-  if [ "$(whereis $cmd | cut -d: -f2)" = '' ]; then
-    printv R "No $cmd tools found"
-    exit 1
+err=0
+for cmd in ip iptables tor $FIREJAILBIN ${SUDOBIN:-su}; do
+  if ! [ file = "$(type -t $cmd 2>/dev/null)" ]; then
+    printv R "$cmd isn't a command file"
+    err=1
   fi
 done
+! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
-ip netns list | grep -e ^$NAME\  &> /dev/null
+ip netns list | grep -e \\b$NAME\\b  &> /dev/null
 if [ $? -ne 0 ]; then
   printv G "It seems that you don't have the namespace $NAME."
   printvn Y "Do you want to create it? [y/n] "
@@ -371,14 +390,15 @@ if [ $? -ne 0 ]; then
 
   # REJECT all traffic coming from torjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-  iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+  iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT &&
+  iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT &&
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+    iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT &&
     iptables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
-  fi
+  fi &&
   # while we inserted the rules above, the DROP rule must be appended instead
-  iptables -A INPUT -i in-$NAME -j DROP
+  iptables -A INPUT -i in-$NAME -j DROP || \
+    die "Failed to configure iptables for rejecting traffic from torjail"
 
   # executing tor
   print G " * Creating the TOR configuration file..."
@@ -388,37 +408,39 @@ if [ $? -ne 0 ]; then
   print G " * tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  chown $USERNAME $TORCONFIGFILE
+  chown $USERNAME $TORCONFIGFILE || \
+    die "Failed to change owner of the TOR configuration file $TORCONFIGFILE"
 
-  echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE
-  echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE
-  echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE
-  echo "PidFile      /tmp/torjail-$NAME/pid"    >> $TORCONFIGFILE
-  echo "User         $USERNAME"                 >> $TORCONFIGFILE
+  echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE &&
+  echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE &&
+  echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE &&
+  echo "PidFile      /tmp/torjail-$NAME/pid"    >> $TORCONFIGFILE &&
+  echo "User         $USERNAME"                 >> $TORCONFIGFILE &&
 
   if [[ $HIDDENSERVICE = y ]]; then
     if [[ $HIDDENSERVICEDIR ]]; then
       echo "HiddenServiceDir $(realpath $HIDDENSERVICEDIR)"       >> $TORCONFIGFILE
     else
       echo "HiddenServiceDir /tmp/torjail-$NAME"  >> $TORCONFIGFILE
-    fi
+    fi &&
     echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> $TORCONFIGFILE
-  fi
+  fi &&
 
   # because some options were deprecated in 0.2.3+
   if [[ "$TORVERSION" > "0.2.3" ]]; then
-     echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> $TORCONFIGFILE
-     echo "TransPort $IPHOST:9040"              >> $TORCONFIGFILE
+     echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> $TORCONFIGFILE &&
+     echo "TransPort $IPHOST:9040"              >> $TORCONFIGFILE &&
      echo "DNSPort $IPHOST:5354"                >> $TORCONFIGFILE
   else
-     echo "VirtualAddrNetwork $IPNETNS/16"      >> $TORCONFIGFILE
-     echo "TransListenAddress $IPHOST"          >> $TORCONFIGFILE
-     echo "TransPort 9040"                      >> $TORCONFIGFILE
-     echo "DNSListenAddress $IPHOST"            >> $TORCONFIGFILE
+     echo "VirtualAddrNetwork $IPNETNS/16"      >> $TORCONFIGFILE &&
+     echo "TransListenAddress $IPHOST"          >> $TORCONFIGFILE &&
+     echo "TransPort 9040"                      >> $TORCONFIGFILE &&
+     echo "DNSListenAddress $IPHOST"            >> $TORCONFIGFILE &&
      echo "DNSPort 5354"                        >> $TORCONFIGFILE
-  fi
+   fi &&
 
-  echo "SOCKSPort 0"                            >> $TORCONFIGFILE
+  echo "SOCKSPort 0"                            >> $TORCONFIGFILE || \
+    die "Failed to write to the TOR configuration file $TORCONFIGFILE"
 
   # executing tor
   print G " * Executing TOR..."
@@ -435,11 +457,15 @@ chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
-  sudo -u $USERNAME firejail --dns=$IPHOST --netns=$NAME $*
+  if [ "$SUDOBIN" ]; then
+    $SUDOBIN -u $USERNAME firejail --dns=$IPHOST --netns=$NAME "$@"
+  else
+    su $USERNAME -c "firejail --dns=$IPHOST --netns=$NAME $*"
+  fi
 else #or without
   ip netns exec $NAME \
     unshare --ipc --fork --pid --mount --mount-proc \
-    $0 --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" $* || \
+    "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
     die "Failed to execute the inside part of this script"
 fi
 
