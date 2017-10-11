@@ -274,6 +274,12 @@ while [[ $# -gt 0 ]]; do
       help_and_exit 0
     ;;
 
+    # End my options
+    --)
+      shift
+      break
+    ;;
+
     # Illegal options
     -*)
       printv R "$key unknown option."
