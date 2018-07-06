@@ -18,6 +18,7 @@ IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
 NETMASK=$NETMASKDEFAULT
 SUDOBIN="$(type -P sudo)"
+FORCEYES=n
 
 # Functions
 # ~~~~~~~~~
@@ -142,6 +143,7 @@ help_and_exit() {
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN torjail -f pidgin)."
+  print N "    -y, --yes          Answer all questions with "y" (torjail -y pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -265,6 +267,10 @@ while [[ $# -gt 0 ]]; do
       USEFIREJAIL=y
       ;;
 
+    -y|--yes)
+      FORCEYES=y
+      ;;
+
     -s|--shell)
       set -- $@ "$SHELL"
       ;;
@@ -333,9 +339,13 @@ done
 # check if network namespace already exists
 ip netns list | grep -e \\b$NAME\\b  &> /dev/null
 if [ $? -ne 0 ]; then
-  printv G "It seems that you don't have the namespace $NAME."
-  printvn Y "Do you want to create it? [y/n] "
-  read CREATE
+  if [ $FORCEYES == n ]; then
+    printv G "It seems that you don't have the namespace $NAME."
+    printvn Y "Do you want to create it? [y/n] "
+    read CREATE
+  else
+    CREATE=y
+  fi
 
   if [ "$CREATE" != y ] && [ "$CREATE" != Y ]; then
     print G "Ok. Bye!"
