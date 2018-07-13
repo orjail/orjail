@@ -468,9 +468,9 @@ chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u $USERNAME firejail --dns=$IPHOST --netns=$NAME "$@"
+    $SUDOBIN -u $USERNAME $FIREJAILBIN --dns=$IPHOST --netns=$NAME "$@"
   else
-    su $USERNAME -c "firejail --dns=$IPHOST --netns=$NAME $*"
+    su $USERNAME -c "$FIREJAILBIN --dns=$IPHOST --netns=$NAME $*"
   fi
 else #or without
   ip netns exec $NAME \
