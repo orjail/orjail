@@ -77,20 +77,20 @@ cleanup() {
   # removing the namespace
   TORPID=$(cat /tmp/torjail-$NAME/pid)
   if [ "$KEEP" = y ]; then
-    print G " * Keeping the tor process $TORPID running"
-    print G " * Keeping the namespace $NAME"
+    print G " * Keep Tor process $TORPID running"
+    print G " * Keep active the namespace $NAME"
   else
-    print G " * Remove tor temporary configuration"
+    print G " * Remove Tor temporary configuration"
     rm $TORCONFIGFILE
-    print G " * Killing tor process $TORPID"
+    print G " * Killing Tor process $TORPID"
     kill -9 $TORPID &> /dev/null
     wait $! &> /dev/null
     print G " * Killed $TORPID"
 
-    print G " * Removing tor DataDirectory: /tmp/torjail-$NAME"
+    print G " * Remove Tor DataDirectory: /tmp/torjail-$NAME"
     rm -fr /tmp/torjail-$NAME
 
-    print G " * Removing in-$NAME network interface"
+    print G " * Remove in-$NAME network interface"
     ip link del in-$NAME
 
     print G " * Delete network namespace $NAME"
@@ -111,7 +111,7 @@ cleanup() {
     iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
   fi
 
-  print G " * Removing the temporary resolve file $RESOLVEFILE..."
+  print G " * Remove the temporary resolve file $RESOLVEFILE..."
   rm "$RESOLVEFILE"
 }
 
@@ -145,7 +145,7 @@ help_and_exit() {
   print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN torjail -f pidgin)."
   print N "    -y, --yes          Answer all questions with "y" (torjail -y pidgin)."
   print N "    -H, --hidden <port>"
-  print N "                       Enable tor as an hidden service forwarding request from/to specified port."
+  print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
   print N "    -s, --shell        Execute a shell."
@@ -385,13 +385,13 @@ if [ $? -ne 0 ]; then
     die "Failed to set up the network routing"
 
   # resolve with tor
-  print G " * Resolving via TOR"
+  print G " * Resolving via Tor"
   iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
         --to-destination $IPHOST:5354 || \
-    die "Failed to configure iptable for routing the tor DNS lookup"
+    die "Failed to configure iptable for routing the Tor DNS lookup"
 
   # traffic througth tor
-  print G " * Traffic via TOR..."
+  print G " * Traffic via Tor..."
   iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
            --to-destination $IPHOST:9040 || \
     die "Failed to configure iptable for routing the network traffic"
@@ -411,15 +411,15 @@ if [ $? -ne 0 ]; then
     die "Failed to configure iptables for rejecting traffic from torjail"
 
   # executing tor
-  print G " * Creating the TOR configuration file..."
+  print G " * Creating the Tor configuration file..."
 
   # automatically detect tor version and use appropriate syntax
   TORVERSION="$($TORBIN --version|egrep -o ' ([0-9.]+)'|xargs)"
-  print G " * tor version is $TORVERSION"
+  print G " * Tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
   chown $USERNAME $TORCONFIGFILE || \
-    die "Failed to change owner of the TOR configuration file $TORCONFIGFILE"
+    die "Failed to change owner of the Tor configuration file $TORCONFIGFILE"
 
   echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE &&
   echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE &&
@@ -450,10 +450,10 @@ if [ $? -ne 0 ]; then
    fi &&
 
   echo "SOCKSPort 0"                            >> $TORCONFIGFILE || \
-    die "Failed to write to the TOR configuration file $TORCONFIGFILE"
+    die "Failed to write to the Tor configuration file $TORCONFIGFILE"
 
   # executing tor
-  print G " * Executing TOR..."
+  print G " * Executing Tor..."
   $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
 else
   print Y "$NAME network namespace already exists!"
