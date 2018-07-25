@@ -1,6 +1,6 @@
 > ### :warning: WARNING
-> torjail is under development, use at your own risk.  
-> if you find a bug, please create an [issue](https://github.com/torjail/torjail/issues).
+> orjail is under development, use at your own risk.  
+> if you find a bug, please create an [issue](https://github.com/orjail/orjail/issues).
 
 ## why?
 we've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
@@ -15,25 +15,25 @@ as [whonix](https://www.whonix.org/) is sometimes too much, the idea is to exper
 ## how it works
 it creates a separated network namespace (using `ip netns`) with its own network
 interface and a link to the host interface with some iptables rules (on host)
-that force traffic generated from inside torjail to only exit via tor (including dns).  
-inside torjail you'll be in another pid namespace (this way you cannot switch
+that force traffic generated from inside orjail to only exit via tor (including dns).  
+inside orjail you'll be in another pid namespace (this way you cannot switch
 namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).  
 
-**if you find a way to deanonimize a program running inside torjail** (also a shell with root privileges) would be nice to [share it with us](https://github.com/torjail/torjail/issues)
+**if you find a way to deanonimize a program running inside orjail** (also a shell with root privileges) would be nice to [share it with us](https://github.com/orjail/orjail/issues)
 
 
 ## additional info
-1. `torjail` needs root permission to run
-1. `torjail` runs your program as your user
-1. `torjail` will launch a tor instance bound to torjail interface
+1. `orjail` needs root permission to run
+1. `orjail` runs your program as your user
+1. `orjail` will launch a tor instance bound to orjail interface
 
 
 ## usage examples: 
 
 #### an example to see what are we talking about (try yourself with ps aux, ls)
 ```
-$ sudo torjail ifconfig
-out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+$ sudo orjail ifconfig
+out-orjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 10.200.1.2  netmask 255.255.255.0  broadcast 0.0.0.0
         inet6 fe80::6439:afff:febc:c9b5  prefixlen 64  scopeid 0x20<link>
         ether 66:39:af:bc:c9:b5  txqueuelen 1000  (Ethernet)
@@ -43,39 +43,39 @@ out-torjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 ```
 
-#### run an hidden service inside torjail (you'll find your address inside `examples/hostname`)
-`sudo torjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
+#### run an hidden service inside orjail (you'll find your address inside `examples/hostname`)
+`sudo orjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
 
 #### getting an homepage content with curl via tor
-`sudo torjail curl autistici.org > autistici.org `
+`sudo orjail curl autistici.org > autistici.org `
 
 #### same as before with another user
-`sudo torjail -u another_user curl autistici.org`
+`sudo orjail -u another_user curl autistici.org`
 
 #### "resolve" a onion address (not so usefull, just to show that .onion resolving works)
-`sudo torjail dig wi7qkxyrdpu5cmvr.onion`
+`sudo orjail dig wi7qkxyrdpu5cmvr.onion`
 
 #### get an onion webserver content via tor:
-`sudo torjail curl wi7qkxyrdpu5cmvr.onion`
+`sudo orjail curl wi7qkxyrdpu5cmvr.onion`
 
 #### open a firefox that could reach internet via tor only:
-`sudo torjail firefox -P /tmp/tmpprofile`
+`sudo orjail firefox -P /tmp/tmpprofile`
 
 > ### :warning:
 > firefox has a flag that blocks .onion resolution by default, change it in **about:config**/**network.dns.blockDotOnion**.  
 >
-> **running a browser inside torjail is not safe, please use Tor Browser instead**
+> **running a browser inside orjail is not safe, please use Tor Browser instead**
 
 #### get an anonymous shell
-`sudo torjail -s`
+`sudo orjail -s`
 
 #### run pidgin in verbose mode
-`sudo torjail -v pidgin`
+`sudo orjail -v pidgin`
 
 #### keep the namespace after exit so we can start another program in same ns 
-`sudo torjail -k ls`
+`sudo orjail -k ls`
 
-#### Use `firejail` as a security sandbox to join torjail network namespace
-`sudo torjail -f thunderbird`
+#### Use `firejail` as a security sandbox to join orjail network namespace
+`sudo orjail -f thunderbird`
 
 Made with :heart: by [_TO*hacklab](https://autistici.org/underscore)

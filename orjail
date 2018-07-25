@@ -2,7 +2,7 @@
 
 REALPATH=`realpath $0`
 REALPATH=`dirname $REALPATH`
-DEFAULTNAME=torjail
+DEFAULTNAME=orjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
 USEFIREJAIL=n
@@ -75,7 +75,7 @@ printvn() {
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
-  TORPID=$(cat /tmp/torjail-$NAME/pid)
+  TORPID=$(cat /tmp/orjail-$NAME/pid)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep active the namespace $NAME"
@@ -87,8 +87,8 @@ cleanup() {
     wait $! &> /dev/null
     print G " * Killed $TORPID"
 
-    print G " * Remove Tor DataDirectory: /tmp/torjail-$NAME"
-    rm -fr /tmp/torjail-$NAME
+    print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
+    rm -fr /tmp/orjail-$NAME
 
     print G " * Remove in-$NAME network interface"
     ip link del in-$NAME
@@ -142,8 +142,8 @@ help_and_exit() {
   print N "    -n, --name <name>  Set a custom namespace name. By default '$DEFAULTNAME'."
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
-  print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN torjail -f pidgin)."
-  print N "    -y, --yes          Answer all questions with "y" (torjail -y pidgin)."
+  print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN orjail -f pidgin)."
+  print N "    -y, --yes          Answer all questions with "y" (orjail -y pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -398,7 +398,7 @@ if [ $? -ne 0 ]; then
   iptables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
-  # REJECT all traffic coming from torjail
+  # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
   iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT &&
   iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT &&
@@ -408,7 +408,7 @@ if [ $? -ne 0 ]; then
   fi &&
   # while we inserted the rules above, the DROP rule must be appended instead
   iptables -A INPUT -i in-$NAME -j DROP || \
-    die "Failed to configure iptables for rejecting traffic from torjail"
+    die "Failed to configure iptables for rejecting traffic from orjail"
 
   # executing tor
   print G " * Creating the Tor configuration file..."
@@ -421,17 +421,17 @@ if [ $? -ne 0 ]; then
   chown $USERNAME $TORCONFIGFILE || \
     die "Failed to change owner of the Tor configuration file $TORCONFIGFILE"
 
-  echo "DataDirectory /tmp/torjail-$NAME"        > $TORCONFIGFILE &&
+  echo "DataDirectory /tmp/orjail-$NAME"        > $TORCONFIGFILE &&
   echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE &&
   echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE &&
-  echo "PidFile      /tmp/torjail-$NAME/pid"    >> $TORCONFIGFILE &&
+  echo "PidFile      /tmp/orjail-$NAME/pid"    >> $TORCONFIGFILE &&
   echo "User         $USERNAME"                 >> $TORCONFIGFILE &&
 
   if [[ $HIDDENSERVICE = y ]]; then
     if [[ $HIDDENSERVICEDIR ]]; then
       echo "HiddenServiceDir $(realpath $HIDDENSERVICEDIR)"       >> $TORCONFIGFILE
     else
-      echo "HiddenServiceDir /tmp/torjail-$NAME"  >> $TORCONFIGFILE
+      echo "HiddenServiceDir /tmp/orjail-$NAME"  >> $TORCONFIGFILE
     fi &&
     echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> $TORCONFIGFILE
   fi &&
