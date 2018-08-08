@@ -1,0 +1,6 @@
+language: minimal
+addons:
+  apt:
+    packages:
+    - shellcheck
+script: shellcheck -s bash orjail

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/orjail/orjail.svg?branch=master)](https://travis-ci.org/orjail/orjail)
+
 > ### :warning: WARNING
 > orjail is under development, use at your own risk.  
 > if you find a bug, please create an [issue](https://github.com/orjail/orjail/issues).
