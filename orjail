@@ -5,8 +5,8 @@
 # terms of the Do What The Fuck You Want To Public License, Version 2,
 # as published by Sam Hocevar. See the COPYING file for more details.
 
-REALPATH=`realpath $0`
-REALPATH=`dirname $REALPATH`
+REALPATH=$(realpath "$0")
+REALPATH=$(dirname "$REALPATH")
 DEFAULTNAME=orjail
 NAME=$DEFAULTNAME
 USERNAME=${SUDO_USER:-$(whoami)}
@@ -22,7 +22,7 @@ IPNETNSDEFAULT=10.200.1.2
 IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
 NETMASK=$NETMASKDEFAULT
-SUDOBIN="$(which sudo)"
+SUDOBIN="$(command -v sudo)"
 FORCEYES=n
 
 # Functions
@@ -36,7 +36,7 @@ print_real() {
   if [ -t 1 ]; then
     NCOLORS=$(tput colors)
 
-    if test -n "$NCOLORS" && test $NCOLORS -ge 8; then
+    if test -n "$NCOLORS" && test "$NCOLORS" -ge 8; then
       NORMAL="$(tput sgr0)"
       RED="$(tput setaf 1)"
       GREEN="$(tput setaf 2)"
@@ -44,13 +44,17 @@ print_real() {
     fi
   fi
 
-  if [ $2 = 'G' ]; then
+  if [[ $2 = 'G' ]]; then
+    # shellcheck disable=SC2086
     echo $1 -e "${GREEN}$3${NORMAL}"
-  elif [ $2 = 'Y' ]; then
+  elif [[ $2 = 'Y' ]]; then
+    # shellcheck disable=SC2086
     echo $1 -e "${YELLOW}$3${NORMAL}"
-  elif [ $2 = 'N' ]; then
+  elif [[ $2 = 'N' ]]; then
+    # shellcheck disable=SC2086
     echo $1 -e "$3"
   else
+    # shellcheck disable=SC2086
     echo $1 -e "${RED}$3${NORMAL}"
   fi
 }
@@ -80,40 +84,40 @@ printvn() {
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
-  TORPID=$(cat /tmp/orjail-$NAME/pid)
+  TORPID=$(cat /tmp/orjail-"$NAME"/pid)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep active the namespace $NAME"
   else
     print G " * Remove Tor temporary configuration"
-    rm $TORCONFIGFILE
+    rm "$TORCONFIGFILE"
     print G " * Killing Tor process $TORPID"
-    kill -9 $TORPID &> /dev/null
+    kill -9 "$TORPID" &> /dev/null
     wait $! &> /dev/null
     print G " * Killed $TORPID"
 
     print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
-    rm -fr /tmp/orjail-$NAME
+    rm -fr /tmp/orjail-"$NAME"
 
     print G " * Remove in-$NAME network interface"
-    ip link del in-$NAME
+    ip link del in-"$NAME"
 
     print G " * Delete network namespace $NAME"
-    ip netns delete $NAME
+    ip netns delete "$NAME"
 
     print G " * Cleaning up iptables rules..."
-    iptables -t nat -D  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
-             --to-destination $IPHOST:5354
-    iptables -t nat -D  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
+    iptables -t nat -D  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
+             --to-destination "$IPHOST":5354
+    iptables -t nat -D  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
              --to-destination $IPHOST:9040
-    iptables -D OUTPUT -o in-$NAME -m state --state ESTABLISHED,RELATED -j ACCEPT
-    iptables -D INPUT -i in-$NAME -j DROP
+    iptables -D OUTPUT -o in-"$NAME" -m state --state ESTABLISHED,RELATED -j ACCEPT
+    iptables -D INPUT -i in-"$NAME" -j DROP
     if [[ $HIDDENSERVICE = y ]]; then
-      iptables -D INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
-      iptables -D INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT
+      iptables -D INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
+      iptables -D INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
     fi
-    iptables -D INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-    iptables -D INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+    iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport 5354 -j ACCEPT
+    iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
   fi
 
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
@@ -148,7 +152,7 @@ help_and_exit() {
   print N "    -v, --verbose      Verbose mode."
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN orjail -f pidgin)."
-  print N "    -y, --yes          Answer all questions with "y" (orjail -y pidgin)."
+  print N "    -y, --yes          Answer all questions with \"y\" (orjail -y pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -156,7 +160,7 @@ help_and_exit() {
   print N "    -s, --shell        Execute a shell."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
-  exit $1
+  exit "$1"
 }
 
 # Inside part
@@ -166,8 +170,8 @@ help_and_exit() {
 # namespace. The arguments are:
 # --inside <username> <resolvefile> <silence> <command> <arguments...>
 if [ "$1" = "--inside" ]; then
-  REALPATH=`realpath $0`
-  REALPATH=`dirname $REALPATH`
+  REALPATH=$(realpath "$0")
+  REALPATH=$(dirname "$REALPATH")
 
   shift
   USERNAME="$1"
@@ -178,15 +182,15 @@ if [ "$1" = "--inside" ]; then
   shift
 
   print G " * Replacing resolv.conf..."
-  mount --bind -o users $RESOLVEFILE /etc/resolv.conf || \
+  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf || \
     error "Failed to mount /etc/resolv.conf."
 
   print G " * Executing..."
 
   if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u $USERNAME "$@"
+    $SUDOBIN -u "$USERNAME" "$@"
   else
-    su $USERNAME -c "$*"
+    su "$USERNAME" -c "$*"
   fi || error "Execution failed."
   exit
 fi
@@ -277,7 +281,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     -s|--shell)
-      set -- $@ "$SHELL"
+      set -- "$@" "$SHELL"
       ;;
 
     # Help menu
@@ -311,6 +315,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 TORBIN=$(type -P tor 2>/dev/null)
+# shellcheck disable=SC2181
 if [[ $? -ne 0 ]]; then
   print R "Can't locate tor executable.";
   exit 1
@@ -334,7 +339,8 @@ fi
 
 err=0
 for cmd in ip iptables tor $FIREJAILBIN ${SUDOBIN:-su}; do
-  if ! [ file = "$(type -t $cmd 2>/dev/null)" ]; then
+  # shellcheck disable=SC1014
+  if ! [ file = "$(type -t "$cmd" 2>/dev/null)" ]; then
     printv R "$cmd isn't a command file"
     err=1
   fi
@@ -342,12 +348,13 @@ done
 ! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
-ip netns list | grep -e \\b$NAME\\b  &> /dev/null
+ip netns list | grep -e \\b"$NAME"\\b  &> /dev/null
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
   if [ $FORCEYES == n ]; then
     printv G "It seems that you don't have the namespace $NAME."
     printvn Y "Do you want to create it? [y/n] "
-    read CREATE
+    read -r CREATE
   else
     CREATE=y
   fi
@@ -359,107 +366,107 @@ if [ $? -ne 0 ]; then
 
   print G " * Creating a $NAME namespace..."
   # add network namespace
-  ip netns add $NAME || die "Failed to add a new namespace"
+  ip netns add "$NAME" || die "Failed to add a new namespace"
 
   # Create veth link.
   print G " * Creating a veth link..."
-  ip link add in-$NAME type veth peer name out-$NAME || \
+  ip link add in-"$NAME" type veth peer name out-"$NAME" || \
     die "Failed to add a veth interface"
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
-  ip link set out-$NAME netns $NAME || \
+  ip link set out-"$NAME" netns "$NAME" || \
     die "Failed to assign veth interface to the namespace"
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  ip addr add $IPHOST/$NETMASK dev in-$NAME || \
+  ip addr add "$IPHOST"/"$NETMASK" dev in-"$NAME" || \
     die "Failed to assign veth interface to the host"
-  ip link set in-$NAME up || die "Failed to set up the veth interface"
+  ip link set in-"$NAME" up || die "Failed to set up the veth interface"
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  ip netns exec $NAME ip addr add $IPNETNS/$NETMASK dev out-$NAME || \
+  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev out-"$NAME" || \
     die "Failed to assign an IP to the veth interface"
-  ip netns exec $NAME ip link set out-$NAME up || \
+  ip netns exec "$NAME" ip link set out-"$NAME" up || \
     die "Failed to assign an IP to the veth interface"
 
   # default route
   print G " * Default routing up..."
-  ip netns exec $NAME ip route add default via $IPHOST || \
+  ip netns exec "$NAME" ip route add default via "$IPHOST" || \
     die "Failed to set up the network routing"
 
   # resolve with tor
   print G " * Resolving via Tor"
-  iptables -t nat -A  PREROUTING -i in-$NAME -p udp -d $IPHOST --dport 53 -j DNAT \
-        --to-destination $IPHOST:5354 || \
+  iptables -t nat -A  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
+        --to-destination "$IPHOST":5354 || \
     die "Failed to configure iptable for routing the Tor DNS lookup"
 
   # traffic througth tor
   print G " * Traffic via Tor..."
-  iptables -t nat -A  PREROUTING -i in-$NAME -p tcp --syn -j DNAT \
-           --to-destination $IPHOST:9040 || \
+  iptables -t nat -A  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
+           --to-destination "$IPHOST":9040 || \
     die "Failed to configure iptable for routing the network traffic"
-  iptables -A OUTPUT -m state -o in-$NAME --state ESTABLISHED,RELATED -j ACCEPT || \
+  iptables -A OUTPUT -m state -o in-"$NAME" --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
   # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-$NAME -p udp --destination $IPHOST --dport 5354 -j ACCEPT &&
-  iptables -I INPUT -i in-$NAME -p tcp --destination $IPHOST --dport 9040 -j ACCEPT &&
+  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport 5354 -j ACCEPT &&
+  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport 9040 -j ACCEPT &&
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -I INPUT -i in-$NAME -p tcp --source $IPNETNS --sport $HSERVICEPORT -j ACCEPT &&
-    iptables -I INPUT -i in-$NAME -p tcp --destination $IPNETNS --dport $HSERVICEPORT -j ACCEPT
-  fi &&
+    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT &&
+    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
+  fi
   # while we inserted the rules above, the DROP rule must be appended instead
-  iptables -A INPUT -i in-$NAME -j DROP || \
+  iptables -A INPUT -i in-"$NAME" -j DROP || \
     die "Failed to configure iptables for rejecting traffic from orjail"
 
   # executing tor
   print G " * Creating the Tor configuration file..."
 
   # automatically detect tor version and use appropriate syntax
-  TORVERSION="$($TORBIN --version|egrep -o ' ([0-9.]+)'|xargs)"
+  TORVERSION="$($TORBIN --version|grep -Eo ' ([0-9.]+)'|xargs)"
   print G " * Tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  chown $USERNAME $TORCONFIGFILE || \
+  chown "$USERNAME" "$TORCONFIGFILE" || \
     die "Failed to change owner of the Tor configuration file $TORCONFIGFILE"
 
-  echo "DataDirectory /tmp/orjail-$NAME"        > $TORCONFIGFILE &&
-  echo "AutomapHostsSuffixes .onion,.exit"      >> $TORCONFIGFILE &&
-  echo "AutomapHostsOnResolve 1"                >> $TORCONFIGFILE &&
-  echo "PidFile      /tmp/orjail-$NAME/pid"    >> $TORCONFIGFILE &&
-  echo "User         $USERNAME"                 >> $TORCONFIGFILE &&
+  echo "DataDirectory /tmp/orjail-$NAME"        > "$TORCONFIGFILE" &&
+  echo "AutomapHostsSuffixes .onion,.exit"      >> "$TORCONFIGFILE" &&
+  echo "AutomapHostsOnResolve 1"                >> "$TORCONFIGFILE" &&
+  echo "PidFile      /tmp/orjail-$NAME/pid"    >> "$TORCONFIGFILE" &&
+  echo "User         $USERNAME"                 >> "$TORCONFIGFILE" &&
 
-  if [[ $HIDDENSERVICE = y ]]; then
-    if [[ $HIDDENSERVICEDIR ]]; then
-      echo "HiddenServiceDir $(realpath $HIDDENSERVICEDIR)"       >> $TORCONFIGFILE
+  if [[ "$HIDDENSERVICE" = y ]]; then
+    if [[ "$HIDDENSERVICEDIR" ]]; then
+      echo "HiddenServiceDir $(realpath "$HIDDENSERVICEDIR")"       >> "$TORCONFIGFILE"
     else
-      echo "HiddenServiceDir /tmp/orjail-$NAME"  >> $TORCONFIGFILE
+      echo "HiddenServiceDir /tmp/orjail-$NAME"  >> "$TORCONFIGFILE"
     fi &&
-    echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> $TORCONFIGFILE
+    echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> "$TORCONFIGFILE"
   fi &&
 
   # because some options were deprecated in 0.2.3+
   if [[ "$TORVERSION" > "0.2.3" ]]; then
-     echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> $TORCONFIGFILE &&
-     echo "TransPort $IPHOST:9040"              >> $TORCONFIGFILE &&
-     echo "DNSPort $IPHOST:5354"                >> $TORCONFIGFILE
+     echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> "$TORCONFIGFILE" &&
+     echo "TransPort $IPHOST:9040"              >> "$TORCONFIGFILE" &&
+     echo "DNSPort $IPHOST:5354"                >> "$TORCONFIGFILE"
   else
-     echo "VirtualAddrNetwork $IPNETNS/16"      >> $TORCONFIGFILE &&
-     echo "TransListenAddress $IPHOST"          >> $TORCONFIGFILE &&
-     echo "TransPort 9040"                      >> $TORCONFIGFILE &&
-     echo "DNSListenAddress $IPHOST"            >> $TORCONFIGFILE &&
-     echo "DNSPort 5354"                        >> $TORCONFIGFILE
-   fi &&
+     echo "VirtualAddrNetwork $IPNETNS/16"      >> "$TORCONFIGFILE" &&
+     echo "TransListenAddress $IPHOST"          >> "$TORCONFIGFILE" &&
+     echo "TransPort 9040"                      >> "$TORCONFIGFILE" &&
+     echo "DNSListenAddress $IPHOST"            >> "$TORCONFIGFILE" &&
+     echo "DNSPort 5354"                        >> "$TORCONFIGFILE"
+   fi
 
-  echo "SOCKSPort 0"                            >> $TORCONFIGFILE || \
+  echo "SOCKSPort 0"                            >> "$TORCONFIGFILE" || \
     die "Failed to write to the Tor configuration file $TORCONFIGFILE"
 
   # executing tor
   print G " * Executing Tor..."
-  $TORBIN --quiet -f $TORCONFIGFILE &> /dev/null &
+  $TORBIN --quiet -f "$TORCONFIGFILE" &> /dev/null &
 else
   print Y "$NAME network namespace already exists!"
   KEEP=y
@@ -467,18 +474,18 @@ fi
 
 RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
 print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-echo "nameserver $IPHOST" > $RESOLVEFILE || die "Failed to create $RESOLVEFILE"
-chmod a+r $RESOLVEFILE || die "Failed to change permissions to $RESOLVEFILE"
+echo "nameserver $IPHOST" > "$RESOLVEFILE" || die "Failed to create $RESOLVEFILE"
+chmod a+r "$RESOLVEFILE" || die "Failed to change permissions to $RESOLVEFILE"
 
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u $USERNAME $FIREJAILBIN --dns=$IPHOST --netns=$NAME "$@"
+    $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" --dns="$IPHOST" --netns="$NAME" "$@"
   else
-    su $USERNAME -c "$FIREJAILBIN --dns=$IPHOST --netns=$NAME $*"
+    su "$USERNAME" -c "$FIREJAILBIN --dns=$IPHOST --netns=$NAME $*"
   fi
 else #or without
-  ip netns exec $NAME \
+  ip netns exec "$NAME" \
     unshare --ipc --fork --pid --mount --mount-proc \
     "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
     die "Failed to execute the inside part of this script"
