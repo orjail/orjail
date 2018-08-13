@@ -22,6 +22,8 @@ IPNETNSDEFAULT=10.200.1.2
 IPNETNS=$IPNETNSDEFAULT
 NETMASKDEFAULT=24
 NETMASK=$NETMASKDEFAULT
+TRANSPORT=9040
+DNSPORT=5354
 SUDOBIN="$(command -v sudo)"
 FORCEYES=n
 
@@ -107,17 +109,17 @@ cleanup() {
 
     print G " * Cleaning up iptables rules..."
     iptables -t nat -D  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
-             --to-destination "$IPHOST":5354
+             --to-destination "$IPHOST":"$DNSPORT"
     iptables -t nat -D  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
-             --to-destination $IPHOST:9040
+             --to-destination $IPHOST:"$TRANSPORT"
     iptables -D OUTPUT -o in-"$NAME" -m state --state ESTABLISHED,RELATED -j ACCEPT
     iptables -D INPUT -i in-"$NAME" -j DROP
     if [[ $HIDDENSERVICE = y ]]; then
       iptables -D INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
       iptables -D INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
     fi
-    iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport 5354 -j ACCEPT
-    iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport 9040 -j ACCEPT
+    iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport "$DNSPORT" -j ACCEPT
+    iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport "$TRANSPORT" -j ACCEPT
   fi
 
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
@@ -160,6 +162,12 @@ help_and_exit() {
   print N "    -s, --shell        Execute a shell."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
+  print N "        --trans-port <port>"
+  print N "                       Set tor TransPort. By default $TRANSPORT"
+  print N "        --dns-port <port>"
+  print N "                       Set custom DnsPort. By default $DNSPORT"
+  print N "        --port-range <port>-<port>"
+  print N "                       Generate random TransPort and DnsPort in the defined range."
   exit "$1"
 }
 
@@ -284,6 +292,53 @@ while [[ $# -gt 0 ]]; do
       set -- "$@" "$SHELL"
       ;;
 
+    # TransPort
+    --trans-port)
+      TRANSPORT="$2"
+      shift
+
+      if [ "$TRANSPORT" = "" ]; then
+        printv R "$key requires an argument."
+        exit 1
+      fi
+    ;;
+
+     # DnsPort
+    --dns-port)
+      USERNAME="$2"
+      shift
+
+      if [ "$DNSPORT" = "" ]; then
+        printv R "$key requires an argument."
+        exit 1
+      fi
+    ;;
+
+     # DnsPort
+    --port-range)
+      range="$2"
+      shift
+
+      if [ "$range" = "" ]; then
+        printv R "$key requires an argument."
+        exit 1
+      fi
+
+      if ! [[ "$range" =~ [0-9]{2,5}-[0-9]{2,5} ]]; then
+        printv R "port range should be like 1000-9000."
+        exit 1
+      fi
+
+      # disabled bacause read -a and mapfile are not available in zsh
+      # shellcheck disable=SC2207
+      rnd_range=( $(shuf -i "$range" -n 2) )
+      TRANSPORT="${rnd_range[0]}"
+      DNSPORT="${rnd_range[1]}"
+
+      printv G "random generated TransPort: $TRANSPORT"
+      printv G "random generated DnsPort: $DNSPORT"
+    ;;
+
     # Help menu
     -h|--help)
       help_and_exit 0
@@ -397,21 +452,21 @@ if [ $? -ne 0 ]; then
   # resolve with tor
   print G " * Resolving via Tor"
   iptables -t nat -A  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
-        --to-destination "$IPHOST":5354 || \
+        --to-destination "$IPHOST":"$DNSPORT" || \
     die "Failed to configure iptable for routing the Tor DNS lookup"
 
   # traffic througth tor
   print G " * Traffic via Tor..."
   iptables -t nat -A  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
-           --to-destination "$IPHOST":9040 || \
+           --to-destination "$IPHOST":"$TRANSPORT" || \
     die "Failed to configure iptable for routing the network traffic"
   iptables -A OUTPUT -m state -o in-"$NAME" --state ESTABLISHED,RELATED -j ACCEPT || \
     die "Failed to configure the iptable for accepting connection"
 
   # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport 5354 -j ACCEPT &&
-  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport 9040 -j ACCEPT &&
+  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT &&
+  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT &&
   if [[ $HIDDENSERVICE = y ]]; then
     iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT &&
     iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
@@ -449,14 +504,14 @@ if [ $? -ne 0 ]; then
   # because some options were deprecated in 0.2.3+
   if [[ "$TORVERSION" > "0.2.3" ]]; then
      echo "VirtualAddrNetworkIPv4 $IPNETNS/16"  >> "$TORCONFIGFILE" &&
-     echo "TransPort $IPHOST:9040"              >> "$TORCONFIGFILE" &&
-     echo "DNSPort $IPHOST:5354"                >> "$TORCONFIGFILE"
+     echo "TransPort $IPHOST:$TRANSPORT"        >> "$TORCONFIGFILE" &&
+     echo "DNSPort $IPHOST:$DNSPORT"            >> "$TORCONFIGFILE"
   else
      echo "VirtualAddrNetwork $IPNETNS/16"      >> "$TORCONFIGFILE" &&
      echo "TransListenAddress $IPHOST"          >> "$TORCONFIGFILE" &&
-     echo "TransPort 9040"                      >> "$TORCONFIGFILE" &&
+     echo "TransPort $TRANSPORT"                >> "$TORCONFIGFILE" &&
      echo "DNSListenAddress $IPHOST"            >> "$TORCONFIGFILE" &&
-     echo "DNSPort 5354"                        >> "$TORCONFIGFILE"
+     echo "DNSPort $DNSPORT"                    >> "$TORCONFIGFILE"
    fi
 
   echo "SOCKSPort 0"                            >> "$TORCONFIGFILE" || \
