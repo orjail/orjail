@@ -1,0 +1,759 @@
+commit f32fb25c19ff3410f9159c444b581c088d96f917
+Author: gibix <gibix@riseup.net>
+Date:   Mon Aug 13 16:27:13 2018 +0200
+
+    add support for firejail arguments
+
+commit 1789ac2ff3ef85778b3086fb72002cfba5f33dde
+Author: gibix <gibix@riseup.net>
+Date:   Mon Aug 13 03:23:19 2018 +0200
+
+    check firejail version
+
+commit 73cf6545063c7ca0d46ffb984b8107b9dd3e678e
+Author: gibix <gibix@riseup.net>
+Date:   Mon Aug 13 02:32:25 2018 +0200
+
+    add {Trans.Dns}Port configuration flag
+    
+    add some configuration flags:
+    --port-range
+    --trans-port
+    --dns-port
+
+commit 0013b7dc1516d0cde3152e3dda0fa4590ebe9af1
+Author: lesion <lesion@autistici.org>
+Date:   Sun Aug 12 22:19:13 2018 +0200
+
+    cleaning & keep shellcheck happy
+
+commit dd771e4f0ab69ec5d7733a8782abc215c7d78464
+Author: gibix <gibix@riseup.net>
+Date:   Sun Aug 12 16:39:18 2018 +0200
+
+    fix based on shellcheck
+    
+    most of them are about unquoted variables, inconsistent if branches and
+    more
+
+commit 4fb539583fe1699b238fc383ed44a5ea34b53386
+Author: gibix <gibix@riseup.net>
+Date:   Wed Aug 8 10:14:56 2018 +0200
+
+    add basic travis ci
+    
+    use shellcheck
+    
+    Signed-off-by: gibix <gibix@riseup.net>
+
+commit 0fcbc477a5834fc8900d4cda14a0ca456a8dd431
+Merge: 02cc3c5 6980c45
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed Aug 8 08:32:25 2018 +0200
+
+    Merge pull request #21 from adrelanos/master
+    
+    clarify license
+
+commit 6980c45b3064ead07ed5ceaa2de6f11f9243a380
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Wed Aug 8 13:26:44 2018 +0800
+
+    clarify license
+    
+    fixes https://github.com/orjail/orjail/issues/20
+
+commit 02cc3c5ae66e85fd3a277e9042c97b33a89b5a31
+Author: lesion <lesion@autistici.org>
+Date:   Tue Aug 7 14:37:18 2018 +0200
+
+    add WTFPL license
+
+commit 2734456fe59c7ab7fba555441119872ba59b25cc
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 25 15:29:19 2018 +0200
+
+    s/torjail/orjail
+    
+    https://lists.torproject.org/pipermail/tor-talk/2018-July/044337.html
+
+commit fe5165e474bbd2e44678b6b543624ef778f5e560
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 24 14:27:44 2018 +0200
+
+    use which instead of type
+
+commit d0bed0c823b837d48f0608850a14dbbebb64c7b1
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 24 14:26:30 2018 +0200
+
+    s/TOR/Tor
+
+commit db5b69d220c34c3444036a6cf40edfbc26242a53
+Author: lesion <lesion@autistici.org>
+Date:   Fri Jul 13 11:00:31 2018 +0200
+
+    minor: use $FIREJAILBIN instead of firejail
+
+commit b85288b7efaf2c78a0dffbff127c48d594f8e3d9
+Merge: 6886507 beb61c0
+Author: gibix <gibix@riseup.net>
+Date:   Fri Jul 6 18:05:01 2018 +0200
+
+    Merge pull request #16 from nebulak/master
+    
+    added -y option
+
+commit beb61c0cd443937f7dd3b267ce81dc1443897fbe
+Author: nebulak <nebulak@openmailbox.org>
+Date:   Fri Jul 6 15:43:24 2018 +0200
+
+    added -y option
+
+commit 6886507492d8b057c9b37febf00c5b7081653cbc
+Merge: ecc82eb 3051503
+Author: lesion <lesion@autistici.org>
+Date:   Wed Oct 11 21:13:02 2017 +0200
+
+    Merge branch 'step--step-'
+
+commit 3051503d2a643ba25b8a15a2ccff0db2008d26d4
+Author: step- <step-@users.noreply.github.com>
+Date:   Wed Oct 11 17:19:22 2017 +0200
+
+    Add option '--' (note)
+    
+    Probably never used but added for good measure.
+
+commit 924ad61befd93717c9903859952d49454c9d8323
+Author: step- <step-@users.noreply.github.com>
+Date:   Wed Oct 11 17:06:23 2017 +0200
+
+    Catch illegal options.
+
+commit cc07a7681bd446963882d7d4b7cac75b37cbe4ba
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 17:23:15 2017 +0200
+
+    Fix "torjail ns exist?" when it does and it's 1!
+
+commit 9c0abfe238c115c993c5a53c8c2464a70918f05a
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 17:21:37 2017 +0200
+
+    Minor typo.
+
+commit ccf504bc2c8b4ff8267f9fd38e4ef27a2ba20cb2
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Get out on iptables configuration error.
+
+commit 2065490279e309893cddb1ba0a9c44de86e17f0c
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Minor.
+
+commit f939262b663354a0fea6aa7dd539412beb3037e8
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Catch file write errors (see note).
+    
+    Note: For future updates pay attention not to break the long && command
+    chain. Consider consolidating multiple echos into a single echo, such as
+      echo "a b
+    c d
+    e f" > $FILE &&
+    Or consolidate as/into a function.
+
+commit 1930eb7600ede34b453648dd23d318f6754aceec
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Use su when sudo isn't available (see notes).
+    
+    So that impersonating --user remains possible.
+    
+    Note: Passing arguments that include interior white space to su -c
+    <command arguments...> won't work. This is a limitation of the way su
+    constructs the -c option argument. This limitation could be removed with
+    more complicated code, which would rarely be used. Work-arounds: don't
+    embed spaces in command arguments; use a script file; use sudo.
+    
+    Note: When --firejail is used, the command must be a simple command,
+    not a shell command list.
+
+commit d9bb2dd0a9d14ab1340484c66594c0ed911d2896
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Handle more breakout signals.
+
+commit 2193d0e817f30faf2c283428e0e56f0238ff026c
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Don't assume that sudo is available/required.
+
+commit b5d8e1862025b013da12ed9de7026f31f034b3ce
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Use bash builtin.
+
+commit 50d12f031c38956bbda9f367e1ca1986dcf4bc8c
+Author: step- <step-@users.noreply.github.com>
+Date:   Fri Oct 6 14:34:57 2017 +0200
+
+    Allow spaces in script arguments.
+
+commit ecc82ebadfb172f84c300e5eba784ccc11fb5651
+Author: lesion <lesion@autistici.org>
+Date:   Sun Sep 10 19:27:09 2017 +0200
+
+    fix kill tor pid not working
+
+commit 9a49c986f606fb46d427db8b3bc805c0311bf515
+Author: lesion <lesion@autistici.org>
+Date:   Sun Sep 10 19:26:01 2017 +0200
+
+    fix wrong proto
+
+commit dd8f09c6b38757376768cc2dc51700d6f0f711ec
+Author: Harly Hallikas <30772586+harlyh@users.noreply.github.com>
+Date:   Wed Sep 6 17:40:29 2017 +0100
+
+    Removed lines that were previously commented out
+
+commit 12302fc76e47d4f03b25313d2b2beae59a644b09
+Author: harlyh <harlyhallikas@gmail.com>
+Date:   Wed Sep 6 15:41:29 2017 +0000
+
+    Tor doesn't support udp protocol. Commented out for now. Sorry lads.
+
+commit c4ee58dde420d040f939181390b5c5a4a0fe3570
+Author: harlyh <harlyhallikas@gmail.com>
+Date:   Wed Sep 6 15:40:27 2017 +0000
+
+    Revert "Tor doesn't support udp protocol. Commented out for now."
+    
+    This reverts commit 45a0ce444e7ef74b2690807d1961c59e95e69219.
+
+commit 45a0ce444e7ef74b2690807d1961c59e95e69219
+Author: harlyh <harlyhallikas@gmail.com>
+Date:   Wed Sep 6 15:38:16 2017 +0000
+
+    Tor doesn't support udp protocol. Commented out for now.
+
+commit a0671f5f09fb79d856d11ca7000d6da3f7616609
+Author: Harly Hallikas <30772586+harlyh@users.noreply.github.com>
+Date:   Wed Sep 6 15:53:50 2017 +0100
+
+    Fixed my quick boo-boo
+    
+    Last iptables rule (DROP) must be (obviously) appended, not inserted into chain :D
+
+commit e1bf29105f19b950c826c445fe1b0e848b2b8e2f
+Author: harlyh <harlyhallikas@gmail.com>
+Date:   Wed Sep 6 14:47:16 2017 +0000
+
+    It would be better to insert (rather than append) torjail's rules
+    into iptables. The reasoning is simple: If there are already existing
+    blocking rules in the chains then torjail's rules wouldn't work
+
+commit 3d6d8b229507bb051f84f1a558ca2d528d434d90
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 21 19:49:11 2017 +0200
+
+    use tor's way to drop privilege
+
+commit d0726bb40b58669336c0cf3c4100f88d62e4f4fa
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 21 19:48:11 2017 +0200
+
+    add hidden service usage example
+
+commit 041d06490d27199a74220f36b15105699f76ba9b
+Merge: 0c02fdf c1aa56e
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 21 19:29:30 2017 +0200
+
+    Merge branch 'hidden-service'
+
+commit c1aa56eb28810438c794e534da5f40bc79d65e66
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 21 19:27:03 2017 +0200
+
+    fix and add hidden service usage
+
+commit 0c02fdf0808b17fd66ce525793d0e597e76bfd1c
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 21 18:39:56 2017 +0200
+
+    run tor as user and use file to store its pid
+
+commit c45d8d76b28f042cfda2d6aad3cee38bdcd6bcce
+Author: lesion <lesion@autistici.org>
+Date:   Wed Aug 16 17:50:14 2017 +0200
+
+    init hidden service support
+
+commit a5b9a46d7839c263c3c8a5a714ea848dea187f86
+Author: [harlyh] <[harlyhallikas@gmail.com]>
+Date:   Fri Aug 11 16:28:14 2017 +0000
+
+    Some options have been deprecated in Tor versions 0.2.3.x and above. This
+    change makes torjail use proper syntax, appropriate for detected version
+
+commit a916f0111a8633cd89ea9af1f236d06bafb567ff
+Author: lesion <lesion@autistici.org>
+Date:   Fri Aug 11 17:09:23 2017 +0200
+
+    initialize $TORBIN
+
+commit ea9a8dd8dc5e4c1b58df7daa1b1367aa29c65257
+Merge: 9d679c8 c2fee10
+Author: lesion <lesion@autistici.org>
+Date:   Fri Aug 11 17:06:05 2017 +0200
+
+    Merge branch 'harlyh-master'
+
+commit c2fee10c0e534cfc1a7061fc190424479067d3d3
+Author: lesion <lesion@autistici.org>
+Date:   Fri Aug 11 17:05:09 2017 +0200
+
+    typo
+
+commit e10b5be85b77b9e7629469982f63641adf2c2d85
+Merge: 9d679c8 9e21c62
+Author: harlyh <30772586+harlyh@users.noreply.github.com>
+Date:   Fri Aug 11 15:51:35 2017 +0100
+
+    Merge pull request #1 from harlyh/dev-bugfixes-and-torv3su
+    
+    Added pre-flight tor binary check
+
+commit 9e21c62e6d05b5c3306519e072b1d5a71c467039
+Author: [harlyh] <[harlyhallikas@gmail.com]>
+Date:   Fri Aug 11 14:49:47 2017 +0000
+
+    Added pre-flight tor binary check
+
+commit 9d679c8eda2dcc1feb6c9e6e496e5eef7df9f05a
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed Jul 19 14:42:33 2017 +0200
+
+    Removed .torrc.example
+
+commit dfa212a69d34066c665d2dc02548013222eb3f62
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 19 12:43:54 2017 +0200
+
+    avoid Destination Unreachable dropping packets instead of reject
+
+commit 1c527131c4b603cbefcc713627446bdacf5ba82b
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 19 10:59:30 2017 +0200
+
+    typo
+
+commit bf156800ded1663128ec72ce99e34733559b27e3
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 19 10:43:40 2017 +0200
+
+    add firejail example in documentation
+
+commit 79df075a49ea470d6930539804625179450bc0bf
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 19 10:36:43 2017 +0200
+
+    fix indentation
+
+commit 8d68ab448bc98f87eee660c76006dabb88305b75
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 19 10:29:44 2017 +0200
+
+    fix #6, making torjail an isolating proxy
+    
+    https://trac.torproject.org/projects/tor/wiki/doc/TorifyHOWTO/IsolatingProxy
+
+commit df6746cdd70e9bf5aa082f43395444cafb644ba6
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 18 23:07:48 2017 +0200
+
+    add firejail security container support !
+
+commit f77fe2c25b531112f78bc94b4e1c27d9d5905bf5
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 18 23:06:20 2017 +0200
+
+    only use our tor configuration, easier, clean
+
+commit bb4246e1b79fa717f3f101087e8fc8aa3a5b2a4c
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 14:37:42 2017 +0200
+
+    repo moved
+
+commit e42265e00b0a97748f963d535e6a4d26cd0d6a6d
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 13:34:10 2017 +0200
+
+    update doc
+
+commit 02a2022096d1473e712901ca7646c4658c65d0aa
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 13:31:25 2017 +0200
+
+    update .torrc config to use 5354 DNSPort
+
+commit bb1f295743e208093fb2cb516cf50a66e7d35566
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 13:28:39 2017 +0200
+
+    s/tab/space
+
+commit b33908792189494da02bd81f1ae9791c250283ae
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 13:25:30 2017 +0200
+
+    change tor dns port to 5354 as 5353 is avahi default one
+
+commit c204e403d489baaa935ba8bd2f40a8145897a17a
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 13:24:13 2017 +0200
+
+    variables exists for a reason
+
+commit 0a2c16a368bc11c024e71aea58ab7f5351f89628
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 11:12:13 2017 +0200
+
+    remove tor tmp config on exit
+
+commit 571dfab6cba70136577142e0854a745e1e3ead67
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 11:06:43 2017 +0200
+
+    Revert "Set theme jekyll-theme-hacker"
+    
+    This reverts commit a03f2e2098588fa36a08266a7c2ef09226e2b6d4.
+
+commit c067296019fd642873a9414d941fb6e205e3688c
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 13 00:35:04 2017 +0200
+
+    init working on new -t
+
+commit a03f2e2098588fa36a08266a7c2ef09226e2b6d4
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 11 22:53:11 2017 +0200
+
+    Set theme jekyll-theme-hacker
+
+commit bb05bd68a5794290cba3c031e2bea019d5bd97d3
+Author: lesion <lesion@autistici.org>
+Date:   Sat Jul 8 23:19:23 2017 +0200
+
+    add iface name to estabilished connection
+
+commit 79f61ed711abb6a3d41275764c3e0b53a9760d15
+Author: lesion <lesion@autistici.org>
+Date:   Sat Jul 8 23:18:16 2017 +0200
+
+    in order to disable SOCKSPort must be set to 0
+
+commit e273de5c17d3c1c28b03f08774a2223a8351df2a
+Author: lesion <lesion@autistici.org>
+Date:   Sat Jul 8 00:17:40 2017 +0200
+
+    fix doc
+
+commit 8776b1f57331cfa3ce612570fc631916698b4340
+Author: lesion <lesion@autistici.org>
+Date:   Sat Jul 8 00:14:49 2017 +0200
+
+    update README
+
+commit e6cf2f7fec262a75a890d05f0af29c48c8008672
+Author: lesion <lesion@autistici.org>
+Date:   Fri Jul 7 23:27:39 2017 +0200
+
+    tor SOCKSPort not needed
+
+commit 4a9471b9188a85e24db8c3245aa13c4aa0971930
+Author: lesion <lesion@autistici.org>
+Date:   Fri Jul 7 23:25:38 2017 +0200
+
+    add iface and iptables rules cleanup on exit
+
+commit 25edb3d87ede693d98604b547fb8093e21511200
+Merge: 1f63f5b 234f74a
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 6 12:05:08 2017 +0200
+
+    merge bic stuff and solve conflicts
+
+commit 1f63f5b3fce808c7184119fc396ca84686e6b108
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Thu Jul 6 10:04:31 2017 +0200
+
+    no-color mode supported
+
+commit e7c3b7e3cb26201a5c336da3a3cba5df5a52e416
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Thu Jul 6 09:55:02 2017 +0200
+
+    Error checks
+
+commit c12ccfbb1c5bab37f882cfd848ba499b036c0648
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Thu Jul 6 09:24:25 2017 +0200
+
+    If the namespace is not created, it doesn't have to be deleted
+
+commit 234f74aa5ffd462ba8b7c8447daca11b8d3ea642
+Merge: 4e88f06 4c2484e
+Author: Gilberto <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 01:26:25 2017 +0200
+
+    Merge branch 'master' into bic
+
+commit 4e88f069135862f1b8488e2d0f033c951a7430ee
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 01:19:33 2017 +0200
+
+    merge resolv permission from master
+
+commit ab3bb1bf6dbf37cf96db9292ac0c09ffb0c7a5e3
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 01:04:20 2017 +0200
+
+    add SIGINT exit handler
+
+commit dd06f2dab4a4fd44e05ddae904b540cee082476d
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 01:03:32 2017 +0200
+
+    set TOREXEC check
+
+commit aa7071197c5f1a8383d845af4256012168c63c3c
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 00:43:08 2017 +0200
+
+    cleanup keep conf
+
+commit 4c2484e9aa2185f8f9d5ec99aed0e8ebe0b315e8
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:55:12 2017 +0200
+
+    --keep works with --tor-exec and namespace
+
+commit f4111804da645bd531841944c62a0631228717b5
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Thu Jul 6 00:02:34 2017 +0200
+
+    force --keep if namespace exist
+
+commit bd3dcc5c3889837ef2f4f9dd4042532c7aa20bf6
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jul 6 00:00:50 2017 +0200
+
+    check fix done yo
+
+commit ad75d9eef81a5e4f5e4926928bfab1ee82bef89b
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 5 23:59:51 2017 +0200
+
+    resolv.conf permission fix
+
+commit c7605a9d951d37c0374db5180abfcc581aa80bca
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:55:12 2017 +0200
+
+    --keep works with --tor-exec and namespace
+
+commit 3dbdca2e68a39473099896e0070a39ede6e29061
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:37:59 2017 +0200
+
+    cleanup help
+
+commit 513cf3f528a20b8e6eb0726cf2ead1f2ba3df62e
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:35:41 2017 +0200
+
+    always cleanup namespace
+
+commit dda47ea2d8ab545d55fb0cb22352d85f217f4bcd
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:35:17 2017 +0200
+
+    add check tools
+
+commit ccc19a038a8fbaaf5505bdb0d96e1b7851e6fd24
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Wed Jul 5 23:34:43 2017 +0200
+
+    add --tor-exec
+
+commit ec64967aebf2b2e984c785aacbd120689761e363
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 5 23:21:36 2017 +0200
+
+    print default username in help
+
+commit 7490131fb18f07576ef0fe691294566c4c79d53f
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jul 5 23:03:55 2017 +0200
+
+    execute program with default user
+
+commit d884bc7244125ec055a23d9a22a1ae1adc2fa473
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Tue Jun 27 14:45:29 2017 +0200
+
+    typo
+
+commit bd945bd5a66d3120af572d2159ca1bb46df5e3c0
+Author: Gilberto Conti <gc.gilbertoconti@gmail.com>
+Date:   Tue Jun 27 10:03:25 2017 +0200
+
+    mv iptables rules from REDIRECT to DNAT
+
+commit f410c17d22302ca49d9f269ddebd4dcc4f932c1c
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jul 4 22:34:08 2017 +0200
+
+    wanna contribute ?
+
+commit e1b89cfcc51a435ca8e77f9ec4af02a9ce1dad21
+Author: lesion <lesion@autistici.org>
+Date:   Sat Jun 17 12:54:53 2017 +0200
+
+    tor configuration
+
+commit 73e51418f7d4eafd718a5c7256f4615895f09e55
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jun 6 14:53:45 2017 +0200
+
+    add some doc
+
+commit 43e6f257d7fa218cdc212a55d196e207bd923b04
+Author: lesion <lesion@autistici.org>
+Date:   Tue Jun 6 14:32:19 2017 +0200
+
+    small fix
+    
+    `torjail -u les -s` differs from `torjail -s -u les`
+
+commit d92abbe007c208e449a8ab0061d47830e265125d
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Thu Jun 1 00:17:28 2017 +0200
+
+    README updated
+
+commit cfc585493df19d2a88a4789746fcdf66c418605d
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Thu Jun 1 00:10:25 2017 +0200
+
+    no sudo, better error messages
+
+commit 0adba00ded5622dbbde9ec0752f5e2330e6e6ef1
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 23:59:17 2017 +0200
+
+    Configurable username
+
+commit 4b2f7f9363714626611299be91ead9308fea7b17
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 23:57:36 2017 +0200
+
+    Fixing netmask issue
+
+commit 4a93c73d0832e12666bdd11052416d1a2542b3dd
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 23:54:00 2017 +0200
+
+    Shell execution
+
+commit 230aed2e3aa14cf790cb0a038061c53ccf473623
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 23:42:43 2017 +0200
+
+    Verbose mode
+
+commit 678a4d9bbbbe744c6f77901f2c33c8b0faa5bade
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 23:02:27 2017 +0200
+
+    Custom routing
+
+commit ca17aa3ea18663a52795643731a68514cb5856e6
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 22:54:01 2017 +0200
+
+    No resolv.conf and other details
+
+commit d89ae490bdc92abafd4fd1be4ea8b346bb3b3722
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Wed May 31 22:38:13 2017 +0200
+
+    Some details
+
+commit bc8e8f50056ac97fd1f21b8ffb967beb784be097
+Author: lesion <lesion@autistici.org>
+Date:   Tue May 30 00:20:42 2017 +0200
+
+    ipc/mount/pid namespaces + fix resolv.conf issue
+
+commit 864bd0cb9b1176dfb74f373dd2285a34fc2bdba7
+Author: lesion <lesion@autistici.org>
+Date:   Fri May 26 12:32:49 2017 +0200
+
+    .
+
+commit d9b841f5fde9e884ec85c2d16ae956fae83dd3ea
+Author: lesion <lesion@autistici.org>
+Date:   Fri May 26 12:29:17 2017 +0200
+
+    improve README
+
+commit 4241113fd1849681c397cc64e30920603c5a24cb
+Author: lesion <lesion@autistici.org>
+Date:   Thu May 25 14:10:18 2017 +0200
+
+    torrc example
+
+commit afead349761d3415ec1724b7fa54172b52e90f3f
+Author: lesion <lesion@autistici.org>
+Date:   Thu May 25 14:08:57 2017 +0200
+
+    s/netjail/torjail
+
+commit a0e2a2306b0c5b51b8b6f1fc996adbb60ce80da4
+Author: lesion <lesion@autistici.org>
+Date:   Wed May 24 23:46:36 2017 +0200
+
+    todo
+
+commit 1cccdcce89484e6a6dbdeca642310cf82b86f35c
+Merge: c32e6bc edd4517
+Author: lesion <lesion@autistici.org>
+Date:   Wed May 24 23:43:30 2017 +0200
+
+    Merge branch 'master' of github.com:lesion/torjail
+
+commit c32e6bc09891ac80f5befa3f3012900589664fff
+Author: lesion <lesion@autistici.org>
+Date:   Wed May 24 23:43:06 2017 +0200
+
+    init
+
+commit edd4517832c21abc206cfe0583eae9d097a37776
+Author: lesion <lesion@autistici.org>
+Date:   Wed May 24 23:41:58 2017 +0200
+
+    Initial commit
