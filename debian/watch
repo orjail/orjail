@@ -1,0 +1,9 @@
+# Copyright (C) 2018 - underscore@autistici.org
+# Copyright (C) 2018 - 2018 ENCRYPTED SUPPORT LP <adrelanos@riseup.net>
+# This work is free. You can redistribute it and/or modify it under the
+# terms of the Do What The Fuck You Want To Public License, Version 2,
+# as published by Sam Hocevar. See the COPYING file for more details.
+
+version=3
+opts=filenamemangle=s/.+\/v?(.*)\.tar\.gz/<project>-$1.tar.gz/ \
+  https://github.com/orjail/orjail/tags .*/v?(\d[\d\.]+)\.tar\.gz

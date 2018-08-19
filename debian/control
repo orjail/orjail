@@ -1,0 +1,24 @@
+# Copyright (C) 2018 - underscore@autistici.org
+# Copyright (C) 2018 - 2018 ENCRYPTED SUPPORT LP <adrelanos@riseup.net>
+# This work is free. You can redistribute it and/or modify it under the
+# terms of the Do What The Fuck You Want To Public License, Version 2,
+# as published by Sam Hocevar. See the COPYING file for more details.
+
+Source: orjail
+Section: misc
+Priority: optional
+Maintainer: Patrick Schleizer <adrelanos@riseup.net>
+Build-Depends: debhelper (>= 9), genmkfile, ruby-ronn
+Homepage: https://github.com/orjail/orjail
+Vcs-Browser: https://github.com/orjail/orjail
+Vcs-Git: https://github.com/orjail/orjail.git
+Standards-Version: 3.9.8
+
+Package: orjail
+Architecture: all
+Depends: ${misc:Depends}
+Description: more secure way to force programs to exclusively use Tor network
+ Simple command line utility that easily creates a separated network namespace
+ (using ip netns) with its own network interface and a link to the host
+ interface with some iptables rules (on host) that force traffic generated from
+ inside orjail to only exit via Tor (including DNS).

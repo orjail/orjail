@@ -3,4 +3,4 @@ addons:
   apt:
     packages:
     - shellcheck
-script: shellcheck -s bash orjail
+script: shellcheck -s bash usr/sbin/orjail
