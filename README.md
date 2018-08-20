@@ -6,18 +6,18 @@
 
 ## why?
 we've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
-as [whonix](https://www.whonix.org/) is sometimes too much, the idea is to experiment with [linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) and learn by doing something usefull (at least for us).
+as [Whonix](https://www.whonix.org/) is sometimes too much, the idea is to experiment with [linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) and learn by doing something useful (at least for us).
 
 ## requirements
 1. a linux kernel supporting namespaces (you have it since 2008)
-1. tor installed
+1. Tor installed
 1. [firejail](https://firejail.wordpress.com/) (optional)
 
 
 ## how it works
 it creates a separated network namespace (using `ip netns`) with its own network
 interface and a link to the host interface with some iptables rules (on host)
-that force traffic generated from inside orjail to only exit via tor (including dns).  
+that force traffic generated from inside orjail to only exit via Tor (including DNS).  
 inside orjail you'll be in another pid namespace (this way you cannot switch
 namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).  
 
@@ -27,7 +27,7 @@ namespace), and another mount namespace (we use this to show a different /etc/re
 ## additional info
 1. `orjail` needs root permission to run
 1. `orjail` runs your program as your user
-1. `orjail` will launch a tor instance bound to orjail interface
+1. `orjail` will launch a Tor instance bound to orjail interface
 
 
 ## usage examples: 
@@ -48,7 +48,7 @@ out-orjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 #### run an hidden service inside orjail (you'll find your address inside `examples/hostname`)
 `sudo orjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
 
-#### getting an homepage content with curl via tor
+#### getting an homepage content with curl via Tor
 `sudo orjail curl autistici.org > autistici.org `
 
 #### same as before with another user
@@ -57,10 +57,10 @@ out-orjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 #### "resolve" a onion address (not so usefull, just to show that .onion resolving works)
 `sudo orjail dig wi7qkxyrdpu5cmvr.onion`
 
-#### get an onion webserver content via tor:
+#### get an onion webserver content via Tor:
 `sudo orjail curl wi7qkxyrdpu5cmvr.onion`
 
-#### open a firefox that could reach internet via tor only:
+#### open a firefox that could reach internet via Tor only:
 `sudo orjail firefox -P /tmp/tmpprofile`
 
 > ### :warning:
