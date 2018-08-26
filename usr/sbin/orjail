@@ -202,7 +202,7 @@ if [ "$1" = "--inside" ]; then
     $SUDOBIN -u "$USERNAME" "$@"
   else
     su "$USERNAME" -c "$*"
-  fi
+  fi || error "Execution failed."
   exit
 fi
 
@@ -550,8 +550,6 @@ print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
 echo "nameserver $IPHOST" > "$RESOLVEFILE" || die "Failed to create $RESOLVEFILE"
 chmod a+r "$RESOLVEFILE" || die "Failed to change permissions to $RESOLVEFILE"
 
-trap cleanup EXIT
-
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
@@ -562,8 +560,11 @@ if [ $USEFIREJAIL = y ]; then
 else #or without
   ip netns exec "$NAME" \
     unshare --ipc --fork --pid --mount --mount-proc \
-    "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@"
+    "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@" || \
+    die "Failed to execute the inside part of this script"
 fi
 
+# clean some shit
+cleanup
 
 # All done!
