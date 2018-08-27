@@ -34,6 +34,7 @@ Force programs to exclusively use Tor network.
     Set a custom namespace name. By default '$DEFAULTNAME'.
 
   * -v, --verbose
+
     Verbose mode.
 
   * -k, --keep
@@ -63,10 +64,10 @@ Force programs to exclusively use Tor network.
   * -s, --shell
 
     Execute a shell.
+
   * -r, --routing <ip_host> <ip_ns> <netmask>
 
     Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT.
-
 
   * --trans-port <port>
 
