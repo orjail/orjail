@@ -86,7 +86,11 @@ printvn() {
 
 # exec no output
 eno() {
+<<<<<<< HEAD
  "$@" &>/dev/null
+=======
+ $* &>/dev/null
+>>>>>>> refs/remotes/origin/master
 }
 
 # Handler of namespace, tor and resolve file
