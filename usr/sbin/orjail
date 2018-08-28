@@ -26,7 +26,6 @@ NETMASK=$NETMASKDEFAULT
 TRANSPORT=9040
 DNSPORT=5354
 SUDOBIN="$(command -v sudo)"
-FORCEYES=n
 
 # Functions
 # ~~~~~~~~~
@@ -166,7 +165,6 @@ help_and_exit() {
   print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN orjail -f pidgin)."
   print N "        --firejail-args \"<args>\""
   print N "                       Set arguments to pass to firejail surrounded by quotes."
-  print N "    -y, --yes          Answer all questions with \"y\" (orjail -y pidgin)."
   print N "    -H, --hidden <port>"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -307,10 +305,6 @@ while [[ $# -gt 0 ]]; do
       USEFIREJAIL=y
       ;;
 
-    -y|--yes)
-      FORCEYES=y
-      ;;
-
     -s|--shell)
       set -- "$@" "$SHELL"
       ;;
@@ -431,18 +425,6 @@ done
 
 # check if network namespace already exists
 if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
-  if [ $FORCEYES == n ]; then
-    printv G "It seems that you don't have the namespace $NAME."
-    printvn Y "Do you want to create it? [y/n] "
-    read -r CREATE
-  else
-    CREATE=y
-  fi
-
-  if [ "$CREATE" != y ] && [ "$CREATE" != Y ]; then
-    print G "Ok. Bye!"
-    exit 0
-  fi
 
   print G " * Creating a $NAME namespace..."
   # add network namespace
