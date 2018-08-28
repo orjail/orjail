@@ -492,11 +492,15 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT &&
-  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT &&
+  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT || \
+    die "Failed to configure iptable to allow dns traffic"
+  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT || \
+    die "Failed to configure iptable to allow transport traffic"
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT &&
-    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
+    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT || \
+      die "Failed to configure iptable to allow traffic from hidden service"
+    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT || \
+      die "Failed to configure iptable to allow traffic to hidden service"
   fi
   # while we inserted the rules above, the DROP rule must be appended instead
   iptables -A INPUT -i in-"$NAME" -j DROP || \
