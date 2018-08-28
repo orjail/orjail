@@ -84,47 +84,52 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+# exec no output
+eno() {
+ "$@" &>/dev/null
+}
+
 # Handler of namespace, tor and resolve file
 cleanup() {
   # removing the namespace
-  TORPID=$(cat /tmp/orjail-"$NAME"/pid)
+  TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep active the namespace $NAME"
   else
     print G " * Remove Tor temporary configuration"
-    rm "$TORCONFIGFILE"
+    eno rm "$TORCONFIGFILE"
     print G " * Killing Tor process $TORPID"
-    kill -9 "$TORPID" &> /dev/null
-    wait $! &> /dev/null
+    eno kill -9 "$TORPID"
+    eno wait $!
     print G " * Killed $TORPID"
 
     print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
-    rm -fr /tmp/orjail-"$NAME"
+    eno rm -fr /tmp/orjail-"$NAME"
 
     print G " * Remove in-$NAME network interface"
-    ip link del in-"$NAME"
+    eno ip link del in-"$NAME"
 
     print G " * Delete network namespace $NAME"
-    ip netns delete "$NAME"
+    eno ip netns delete "$NAME"
 
     print G " * Cleaning up iptables rules..."
-    iptables -t nat -D  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
-             --to-destination "$IPHOST":"$DNSPORT"
-    iptables -t nat -D  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
-             --to-destination $IPHOST:"$TRANSPORT"
-    iptables -D OUTPUT -o in-"$NAME" -m state --state ESTABLISHED,RELATED -j ACCEPT
-    iptables -D INPUT -i in-"$NAME" -j DROP
+    eno iptables -t nat -D  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
+                 --to-destination "$IPHOST":"$DNSPORT"
+    eno iptables -t nat -D  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
+                 --to-destination $IPHOST:"$TRANSPORT"
+    eno iptables -D OUTPUT -o in-"$NAME" -m state --state ESTABLISHED,RELATED -j ACCEPT
+    eno iptables -D INPUT -i in-"$NAME" -j DROP
     if [[ $HIDDENSERVICE = y ]]; then
-      iptables -D INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
-      iptables -D INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
+      eno iptables -D INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
+      eno iptables -D INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
     fi
-    iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport "$DNSPORT" -j ACCEPT
-    iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport "$TRANSPORT" -j ACCEPT
+    eno iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport "$DNSPORT" -j ACCEPT
+    eno iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport "$TRANSPORT" -j ACCEPT
   fi
 
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
-  rm "$RESOLVEFILE"
+  eno rm "$RESOLVEFILE"
 }
 
 # Handler of breakout signals
@@ -421,7 +426,7 @@ done
 ! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
-ip netns list | grep -e \\b"$NAME"\\b  &> /dev/null
+eno ip netns list | grep -e \\b"$NAME"\\b
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
   if [ $FORCEYES == n ]; then
@@ -509,14 +514,14 @@ if [ $? -ne 0 ]; then
   echo "DataDirectory /tmp/orjail-$NAME"        > "$TORCONFIGFILE" &&
   echo "AutomapHostsSuffixes .onion,.exit"      >> "$TORCONFIGFILE" &&
   echo "AutomapHostsOnResolve 1"                >> "$TORCONFIGFILE" &&
-  echo "PidFile      /tmp/orjail-$NAME/pid"    >> "$TORCONFIGFILE" &&
+  echo "PidFile      /tmp/orjail-$NAME/pid"     >> "$TORCONFIGFILE" &&
   echo "User         $USERNAME"                 >> "$TORCONFIGFILE" &&
 
   if [[ "$HIDDENSERVICE" = y ]]; then
     if [[ "$HIDDENSERVICEDIR" ]]; then
-      echo "HiddenServiceDir $(realpath "$HIDDENSERVICEDIR")"       >> "$TORCONFIGFILE"
+      echo "HiddenServiceDir $(realpath "$HIDDENSERVICEDIR")" >> "$TORCONFIGFILE"
     else
-      echo "HiddenServiceDir /tmp/orjail-$NAME"  >> "$TORCONFIGFILE"
+      echo "HiddenServiceDir /tmp/orjail-$NAME" >> "$TORCONFIGFILE"
     fi &&
     echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> "$TORCONFIGFILE"
   fi &&
