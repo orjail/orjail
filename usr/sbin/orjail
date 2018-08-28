@@ -86,7 +86,7 @@ printvn() {
 
 # exec no output
 eno() {
- $* &>/dev/null
+ "$@" &>/dev/null
 }
 
 # Handler of namespace, tor and resolve file
