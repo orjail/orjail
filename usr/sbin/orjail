@@ -86,7 +86,11 @@ printvn() {
 
 # exec no output
 eno() {
- "$@" &>/dev/null
+  if [ "$VERBOSE" != y ]; then
+    "$@" &>/dev/null
+  else
+    "$@"
+  fi
 }
 
 # Handler of namespace, tor and resolve file
