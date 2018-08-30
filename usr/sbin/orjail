@@ -493,7 +493,8 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
     die "Failed to configure iptables for rejecting traffic from orjail"
 
   # disable forwarding (no packets from here should be forwarded!)
-  iptables -I FORWARD -i in-"$NAME" -j DROP &&
+  iptables -I FORWARD -i in-"$NAME" -j DROP || \
+    die "Failed to disable forwarding on in-$NAME interface"
   iptables -I FORWARD -o in-"$NAME" -j DROP || \
     die "Failed to disable forwarding on in-$NAME interface"
 
