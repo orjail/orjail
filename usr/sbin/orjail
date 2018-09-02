@@ -216,8 +216,9 @@ fi
 # The tool
 # ~~~~~~~~
 
-# Call cleanup on ctrl-c (SIGINT) and more breakout signals
-trap interrupted HUP INT QUIT TERM ABRT
+# exit on error, and call cleanup on exit
+set -e
+trap cleanup EXIT
 
 # Arguments check
 while [[ $# -gt 0 ]]; do
@@ -229,8 +230,7 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$NAME" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
+        die "$key requires an argument."
       fi
     ;;
 
@@ -240,8 +240,7 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$USERNAME" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
+        die "$key requires an argument."
       fi
     ;;
 
@@ -259,8 +258,7 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$HSERVICEPORT" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
+        die "$key requires an argument."
       fi
       ;;
 
@@ -269,8 +267,7 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "$HIDDENSERVICEDIR" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
+        die "$key requires an argument."
       fi
       ;;
 
@@ -285,8 +282,7 @@ while [[ $# -gt 0 ]]; do
       if [ "$IPHOST" = "" ] ||
          [ "$IPNETNS" = "" ] ||
          [ "$NETMASK" = "" ]; then
-        printv R "$key requires 3 arguments."
-        exit 1
+        die "$key requires 3 arguments."
       fi
       ;;
 
@@ -299,8 +295,7 @@ while [[ $# -gt 0 ]]; do
       shift
 
       if [ "${#FIREJAILARGS[@]}" -eq 0 ]; then
-        printv R "$key requires an argument."
-        exit 1
+        die "$key requires an argument."
       fi
       USEFIREJAIL=y
       ;;
@@ -313,37 +308,25 @@ while [[ $# -gt 0 ]]; do
     --trans-port)
       TRANSPORT="$2"
       shift
-
-      if [ "$TRANSPORT" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
-      fi
+      [ "$TRANSPORT" ] || die "$key requires an argument."
     ;;
 
      # DnsPort
     --dns-port)
-      USERNAME="$2"
+      DNSPORT="$2"
       shift
-
-      if [ "$DNSPORT" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
-      fi
+      [ "$DNSPORT" ] || die "$key requires an argument."
     ;;
 
-     # DnsPort
+     # PortRange
     --port-range)
       range="$2"
       shift
 
-      if [ "$range" = "" ]; then
-        printv R "$key requires an argument."
-        exit 1
-      fi
+      [ "$range" ] || die "$key requires an argument."
 
       if ! [[ "$range" =~ [0-9]{2,5}-[0-9]{2,5} ]]; then
-        printv R "port range should be like 1000-9000."
-        exit 1
+        die "port range should be like 1000-9000."
       fi
 
       # disabled bacause read -a and mapfile are not available in zsh
@@ -369,8 +352,7 @@ while [[ $# -gt 0 ]]; do
 
     # Illegal options
     -*)
-      printv R "$key unknown option."
-      exit 1
+      die "$key unknown option."
     ;;
 
     # The rest
@@ -382,14 +364,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $EUID -ne 0 ]]; then
-   printv R "$DEFAULTNAME must be run as root."
-   exit 1
+   die "$DEFAULTNAME must be run as root."
 fi
 
 TORBIN=$(command -v tor)
 if ! [ -x "$TORBIN" ]; then
-  printv R "Can't locate tor executable.";
-  exit 1
+  die "Can't locate tor executable.";
 fi
 
 # No arguments, no party
@@ -398,17 +378,15 @@ if [ "$1" = "" ]; then
 fi
 
 # Check linux kernel
-if [ "$(uname)" != Linux ]; then
-  printv R "No Linux no party"
-  exit 1
+if [ "$(uname)" != "Linux" ]; then
+  die "No Linux no party"
 fi
 
 FIREJAILBIN=
 if [ $USEFIREJAIL = y ]; then
   firejail_version=$(firejail --version | grep -io "9.[0-9]\\{2\\}")
   if [[ $(echo "$firejail_version>9.44" | bc) -eq 0 ]]; then
-	  printv R "orjail requires at least firejail 0.99.44.10 to run."
-	  exit 1
+	  die "orjail requires at least firejail 0.99.44.10 to run."
   fi
 
   FIREJAILBIN=firejail
@@ -428,71 +406,55 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   print G " * Creating a $NAME namespace..."
   # add network namespace
-  ip netns add "$NAME" || die "Failed to add a new namespace"
+  ip netns add "$NAME"
 
   # Create veth link.
   print G " * Creating a veth link..."
-  ip link add in-"$NAME" type veth peer name out-"$NAME" || \
-    die "Failed to add a veth interface"
+  ip link add in-"$NAME" type veth peer name out-"$NAME"
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
-  ip link set out-"$NAME" netns "$NAME" || \
-    die "Failed to assign veth interface to the namespace"
+  ip link set out-"$NAME" netns "$NAME"
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  ip addr add "$IPHOST"/"$NETMASK" dev in-"$NAME" || \
-    die "Failed to assign veth interface to the host"
-  ip link set in-"$NAME" up || die "Failed to set up the veth interface"
+  ip addr add "$IPHOST"/"$NETMASK" dev in-"$NAME"
+  ip link set in-"$NAME" up
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev out-"$NAME" || \
-    die "Failed to assign an IP to the veth interface"
-  ip netns exec "$NAME" ip link set out-"$NAME" up || \
-    die "Failed to assign an IP to the veth interface"
+  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev out-"$NAME"
+  ip netns exec "$NAME" ip link set out-"$NAME" up
 
   # default route
   print G " * Default routing up..."
-  ip netns exec "$NAME" ip route add default via "$IPHOST" || \
-    die "Failed to set up the network routing"
+  ip netns exec "$NAME" ip route add default via "$IPHOST"
 
   # resolve with tor
   print G " * Resolving via Tor"
   iptables -t nat -A  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
-        --to-destination "$IPHOST":"$DNSPORT" || \
-    die "Failed to configure iptable for routing the Tor DNS lookup"
+        --to-destination "$IPHOST":"$DNSPORT"
 
   # traffic througth tor
   print G " * Traffic via Tor..."
   iptables -t nat -A  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
-           --to-destination "$IPHOST":"$TRANSPORT" || \
-    die "Failed to configure iptable for routing the network traffic"
-  iptables -A OUTPUT -m state -o in-"$NAME" --state ESTABLISHED,RELATED -j ACCEPT || \
-    die "Failed to configure the iptable for accepting connection"
+           --to-destination "$IPHOST":"$TRANSPORT"
+  iptables -A OUTPUT -m state -o in-"$NAME" --state ESTABLISHED,RELATED -j ACCEPT
 
   # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT || \
-    die "Failed to configure iptable to allow dns traffic"
-  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT || \
-    die "Failed to configure iptable to allow transport traffic"
+  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT
+  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT || \
-      die "Failed to configure iptable to allow traffic from hidden service"
-    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT || \
-      die "Failed to configure iptable to allow traffic to hidden service"
+    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
+    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
   fi
   # while we inserted the rules above, the DROP rule must be appended instead
-  iptables -A INPUT -i in-"$NAME" -j DROP || \
-    die "Failed to configure iptables for rejecting traffic from orjail"
+  iptables -A INPUT -i in-"$NAME" -j DROP
 
   # disable forwarding (no packets from here should be forwarded!)
-  iptables -I FORWARD -i in-"$NAME" -j DROP || \
-    die "Failed to disable forwarding on in-$NAME interface"
-  iptables -I FORWARD -o in-"$NAME" -j DROP || \
-    die "Failed to disable forwarding on in-$NAME interface"
+  iptables -I FORWARD -i in-"$NAME" -j DROP
+  iptables -I FORWARD -o in-"$NAME" -j DROP
 
   sysctl -w -q net.ipv4.conf.in-"$NAME".forwarding=0
 
@@ -504,8 +466,7 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   print G " * Tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  chown "$USERNAME" "$TORCONFIGFILE" || \
-    die "Failed to change owner of the Tor configuration file $TORCONFIGFILE"
+  chown "$USERNAME" "$TORCONFIGFILE"
 
   echo "DataDirectory /tmp/orjail-$NAME"        > "$TORCONFIGFILE" &&
   echo "AutomapHostsSuffixes .onion,.exit"      >> "$TORCONFIGFILE" &&
