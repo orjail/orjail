@@ -135,8 +135,10 @@ cleanup() {
 
   fi
 
+  if [ ! -z "$RESOLVEFILE" ]; then
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
   eno rm "$RESOLVEFILE"
+  fi
 }
 
 # Handler of breakout signals
@@ -550,10 +552,12 @@ else
   KEEP=y
 fi
 
-RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
-print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-echo "nameserver $IPHOST" > "$RESOLVEFILE" || die "Failed to create $RESOLVEFILE"
-chmod a+r "$RESOLVEFILE" || die "Failed to change permissions to $RESOLVEFILE"
+if ! [ $USEFIREJAIL = y ]; then
+  RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
+  print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
+  echo "nameserver $IPHOST" > "$RESOLVEFILE"
+  chmod a+r "$RESOLVEFILE"
+fi
 
 trap cleanup EXIT
 
