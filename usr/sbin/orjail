@@ -94,7 +94,8 @@ eno() {
 
 # kill tor, remove network namespace, cleanup added iptables rules
 cleanup() {
-  # removing the namespace
+  set +e
+
   TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
