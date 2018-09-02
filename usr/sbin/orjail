@@ -92,13 +92,13 @@ eno() {
   fi
 }
 
-# Handler of namespace, tor and resolve file
+# kill tor, remove network namespace, cleanup added iptables rules
 cleanup() {
   # removing the namespace
   TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
-    print G " * Keep active the namespace $NAME"
+    print G " * Keep $NAME namespace active"
   else
     print G " * Remove Tor temporary configuration"
     eno rm "$TORCONFIGFILE"
@@ -133,13 +133,6 @@ cleanup() {
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
   eno rm "$RESOLVEFILE"
   fi
-}
-
-# Handler of breakout signals
-interrupted() {
-  printv R " * Received breakout signal"
-  cleanup
-  exit 1
 }
 
 error() {
@@ -186,7 +179,7 @@ help_and_exit() {
 
 # This script calls itself. yeah \o/ This part is executed only inside the
 # namespace. The arguments are:
-# --inside <username> <resolvefile> <silence> <command> <arguments...>
+# --inside <username> <resolvefile> <verbose> <command> <arguments...>
 if [ "$1" = "--inside" ]; then
   REALPATH=$(realpath "$0")
   REALPATH=$(dirname "$REALPATH")
@@ -458,7 +451,7 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   sysctl -w -q net.ipv4.conf.in-"$NAME".forwarding=0
 
-  # executing tor
+  # execute tor
   print G " * Creating the Tor configuration file..."
 
   # automatically detect tor version and use appropriate syntax
