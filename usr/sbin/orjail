@@ -511,7 +511,11 @@ trap cleanup EXIT
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" "${FIREJAILARGS[@]}" --dns="$IPHOST" --netns="$NAME" "$@"
+    if [ "${FIREJAILARGS[0]}" ]; then
+      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" "${FIREJAILARGS[@]}" --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" "$@"
+    else
+      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" "$@"
+    fi
   else
     su "$USERNAME" -c "$FIREJAILBIN ${FIREJAILARGS[*]} --dns=$IPHOST --netns=$NAME $*"
   fi
