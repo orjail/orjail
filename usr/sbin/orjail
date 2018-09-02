@@ -461,20 +461,26 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
   chown "$USERNAME" "$TORCONFIGFILE"
 
-  echo "DataDirectory /tmp/orjail-$NAME"        > "$TORCONFIGFILE" &&
-  echo "AutomapHostsSuffixes .onion,.exit"      >> "$TORCONFIGFILE" &&
-  echo "AutomapHostsOnResolve 1"                >> "$TORCONFIGFILE" &&
-  echo "PidFile      /tmp/orjail-$NAME/pid"     >> "$TORCONFIGFILE" &&
-  echo "User         $USERNAME"                 >> "$TORCONFIGFILE" &&
+  cat > "$TORCONFIGFILE" <<EOF
+  DataDirectory /tmp/orjail-${NAME}
+  AutomapHostsSuffixes .onion,.exit
+  AutomapHostsOnResolve 1
+  PidFile      /tmp/orjail-${NAME}/pid
+  User         ${USERNAME}
+  VirtualAddrNetworkIPv4 ${IPNETNS}/16
+  TransPort ${IPHOST}:${TRANSPORT}
+  DNSPort ${IPHOST}:${DNSPORT}
+  SOCKSPort 0
+EOF
 
   if [[ "$HIDDENSERVICE" = y ]]; then
     if [[ "$HIDDENSERVICEDIR" ]]; then
       echo "HiddenServiceDir $(realpath "$HIDDENSERVICEDIR")" >> "$TORCONFIGFILE"
     else
       echo "HiddenServiceDir /tmp/orjail-$NAME" >> "$TORCONFIGFILE"
-    fi &&
+    fi
     echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> "$TORCONFIGFILE"
-  fi &&
+  fi
 
   # reuse tor host's cache
   if [ -d "/var/lib/tor" ]; then
@@ -487,9 +493,6 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
       rm "/tmp/orjail-${NAME}/lock"
     fi
    fi
-
-  echo "SOCKSPort 0"                            >> "$TORCONFIGFILE" || \
-    die "Failed to write to the Tor configuration file $TORCONFIGFILE"
 
   # executing tor
   print G " * Executing Tor..."
