@@ -499,7 +499,6 @@ EOF
   $TORBIN --quiet -f "$TORCONFIGFILE" &> /dev/null &
 else
   print Y "$NAME network namespace already exists!"
-  KEEP=y
 fi
 
 if ! [ $USEFIREJAIL = y ]; then
