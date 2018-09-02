@@ -117,21 +117,15 @@ cleanup() {
     eno ip netns delete "$NAME"
 
     print G " * Cleaning up iptables rules..."
-    eno iptables -t nat -D  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
-                 --to-destination "$IPHOST":"$DNSPORT"
-    eno iptables -t nat -D  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
-                 --to-destination $IPHOST:"$TRANSPORT"
-    eno iptables -D OUTPUT -o in-"$NAME" -m state --state ESTABLISHED,RELATED -j ACCEPT
-    eno iptables -D INPUT -i in-"$NAME" -j DROP
-    if [[ $HIDDENSERVICE = y ]]; then
-      eno iptables -D INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
-      eno iptables -D INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
-    fi
-    eno iptables -D INPUT -i in-"$NAME" -p udp --destination $IPHOST --dport "$DNSPORT" -j ACCEPT
-    eno iptables -D INPUT -i in-"$NAME" -p tcp --destination $IPHOST --dport "$TRANSPORT" -j ACCEPT
+    iptables -S | grep "in-$NAME" | while read -r line; do
+      # shellcheck disable=SC2086
+      iptables ${line//-A/-D} &>/dev/null;
+    done
+    iptables -t nat -S | grep "in-$NAME" | while read -r line; do
+      # shellcheck disable=SC2086
+      iptables -t nat ${line//-A/-D} &>/dev/null;
+    done
 
-    eno iptables -D FORWARD -i in-"$NAME" -j DROP
-    eno iptables -D FORWARD -o in-"$NAME" -j DROP
 
   fi
 
