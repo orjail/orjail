@@ -26,6 +26,7 @@ NETMASK=$NETMASKDEFAULT
 TRANSPORT=9040
 DNSPORT=5354
 SUDOBIN="$(command -v sudo)"
+NOSETUPERROR=n
 
 # Functions
 # ~~~~~~~~~
@@ -94,6 +95,10 @@ eno() {
 
 # kill tor, remove network namespace, cleanup added iptables rules
 cleanup() {
+  if [ "$NOSETUPERROR" != y ]; then
+    ERROR_COMMAND=$(eval echo "${BASH_COMMAND//\"/\\\"}")
+    printv R "[Error] $ERROR_COMMAND"
+  fi
   set +e
 
   TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
@@ -520,8 +525,7 @@ if ! [ $USEFIREJAIL = y ]; then
   chmod a+r "$RESOLVEFILE"
 fi
 
-trap cleanup EXIT
-
+NOSETUPERROR=y
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
