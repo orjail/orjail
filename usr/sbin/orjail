@@ -123,11 +123,11 @@ cleanup() {
     eno ip netns delete "$NAME"
 
     print G " * Cleaning up iptables rules..."
-    iptables -S | grep "in-$NAME" | while read -r line; do
+    iptables -S | grep \\b"in-$NAME"\\b | while read -r line; do
       # shellcheck disable=SC2086
       iptables ${line//-A/-D} &>/dev/null;
     done
-    iptables -t nat -S | grep "in-$NAME" | while read -r line; do
+    iptables -t nat -S | grep \\b"in-$NAME"\\b | while read -r line; do
       # shellcheck disable=SC2086
       iptables -t nat ${line//-A/-D} &>/dev/null;
     done
