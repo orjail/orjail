@@ -101,23 +101,23 @@ cleanup() {
   fi
   set +e
 
-  TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
+  TORPID=$(cagit /tmp/orjail-"$NAME"/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep $NAME namespace active"
   else
     print G " * Remove Tor temporary configuration"
-    eno rm "$TORCONFIGFILE"
+    [ -f "$TORCONFIGFILE" ] && rm "$TORCONFIGFILE"
     print G " * Killing Tor process $TORPID"
-    eno kill -9 "$TORPID"
+    [ "$TORPID" ] && eno kill -9 "$TORPID"
     eno wait $!
     print G " * Killed $TORPID"
 
     print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
-    eno rm -fr /tmp/orjail-"$NAME"
+    eno rm -fr "/tmp/orjail-$NAME"
 
     print G " * Remove in-$NAME network interface"
-    eno ip link del in-"$NAME"
+    eno ip link del "in-$NAME"
 
     print G " * Delete network namespace $NAME"
     eno ip netns delete "$NAME"
@@ -125,11 +125,11 @@ cleanup() {
     print G " * Cleaning up iptables rules..."
     iptables -S | grep \\b"in-$NAME"\\b | while read -r line; do
       # shellcheck disable=SC2086
-      iptables ${line//-A/-D} &>/dev/null;
+      eno iptables ${line//-A/-D}
     done
     iptables -t nat -S | grep \\b"in-$NAME"\\b | while read -r line; do
       # shellcheck disable=SC2086
-      iptables -t nat ${line//-A/-D} &>/dev/null;
+      eno iptables -t nat ${line//-A/-D}
     done
 
 
@@ -409,21 +409,21 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   # Create veth link.
   print G " * Creating a veth link..."
-  ip link add in-"$NAME" type veth peer name out-"$NAME"
+  ip link add "in-$NAME" type veth peer name "out-$NAME"
 
   # Add out to NS.
   print G " * Sharing the veth interface..."
-  ip link set out-"$NAME" netns "$NAME"
+  ip link set "out-$NAME" netns "$NAME"
 
   ## setup ip address of host interface
   print G " * Setting up IP address of host interface..."
-  ip addr add "$IPHOST"/"$NETMASK" dev in-"$NAME"
-  ip link set in-"$NAME" up
+  ip addr add "$IPHOST"/"$NETMASK" dev "in-$NAME"
+  ip link set "in-$NAME" up
 
   # setup ip address of peer
   print G " * Setting up IP address of peer interface..."
-  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev out-"$NAME"
-  ip netns exec "$NAME" ip link set out-"$NAME" up
+  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev "out-$NAME"
+  ip netns exec "$NAME" ip link set "out-$NAME" up
 
   # default route
   print G " * Default routing up..."
@@ -431,42 +431,42 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   # resolve with tor
   print G " * Resolving via Tor"
-  iptables -t nat -A  PREROUTING -i in-"$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
+  iptables -t nat -A  PREROUTING -i "in-$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
         --to-destination "$IPHOST":"$DNSPORT"
 
   # traffic througth tor
   print G " * Traffic via Tor..."
-  iptables -t nat -A  PREROUTING -i in-"$NAME" -p tcp --syn -j DNAT \
+  iptables -t nat -A  PREROUTING -i "in-$NAME" -p tcp --syn -j DNAT \
            --to-destination "$IPHOST":"$TRANSPORT"
-  iptables -A OUTPUT -m state -o in-"$NAME" --state ESTABLISHED,RELATED -j ACCEPT
+  iptables -A OUTPUT -m state -o "in-$NAME" --state ESTABLISHED,RELATED -j ACCEPT
 
   # REJECT all traffic coming from orjail
   # this is needed to avoid reaching other interfaces
-  iptables -I INPUT -i in-"$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT
-  iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT
+  iptables -I INPUT -i "in-$NAME" -p udp --destination "$IPHOST" --dport "$DNSPORT" -j ACCEPT
+  iptables -I INPUT -i "in-$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
-    iptables -I INPUT -i in-"$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
-    iptables -I INPUT -i in-"$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
+    iptables -I INPUT -i "in-$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
+    iptables -I INPUT -i "in-$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
   fi
   # while we inserted the rules above, the DROP rule must be appended instead
-  iptables -A INPUT -i in-"$NAME" -j DROP
+  iptables -A INPUT -i "in-$NAME" -j DROP
 
   # disable forwarding (no packets from here should be forwarded!)
-  iptables -I FORWARD -i in-"$NAME" -j DROP
-  iptables -I FORWARD -o in-"$NAME" -j DROP
+  iptables -I FORWARD -i "in-$NAME" -j DROP
+  iptables -I FORWARD -o "in-$NAME" -j DROP
 
-  sysctl -w -q net.ipv4.conf.in-"$NAME".forwarding=0
+  sysctl -w -q "net.ipv4.conf.in-$NAME".forwarding=0
 
-  # everything coming/redirected from orjail does not have to reach any other interface 
-  iptables -t nat -I POSTROUTING 1 \! -o in-"$NAME" -s "$IPHOST"/24 -j RETURN
-  iptables -t nat -I PREROUTING 1 \! -i in-"$NAME" -d "$IPHOST"/24 -j RETURN
+  # everything coming/redirected from orjail does not have to reach any other interface
+  iptables -t nat -I POSTROUTING 1 \! -o "in-$NAME" -s "$IPHOST/24" -j RETURN
+  iptables -t nat -I PREROUTING 1 \! -i "in-$NAME" -d "$IPHOST/24" -j RETURN
 
   # prevent port redirection to be made in orjail
-  iptables -t nat -A PREROUTING -i in-"$NAME" -j RETURN
+  iptables -t nat -A PREROUTING -i "in-$NAME" -j RETURN
 
-  # prevent external traffic to reach orjail  
-  iptables -A INPUT ! -i in-orjail -s "$IPHOST"/24 -j DROP
-  iptables -A INPUT ! -i in-orjail -d "$IPHOST"/24 -j DROP
+  # prevent external traffic to reach orjail
+  iptables -A INPUT ! -i "in-$NAME" -s "$IPHOST/24" -j DROP
+  iptables -A INPUT ! -i "in-$NAME" -d "$IPHOST/24" -j DROP
 
   # execute tor
   print G " * Creating the Tor configuration file..."
