@@ -101,7 +101,7 @@ cleanup() {
   fi
   set +e
 
-  TORPID=$(cagit /tmp/orjail-"$NAME"/pid 2> /dev/null)
+  TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep $NAME namespace active"
@@ -109,8 +109,7 @@ cleanup() {
     print G " * Remove Tor temporary configuration"
     [ -f "$TORCONFIGFILE" ] && rm "$TORCONFIGFILE"
     print G " * Killing Tor process $TORPID"
-    [ "$TORPID" ] && eno kill -9 "$TORPID"
-    eno wait $!
+    [ "$TORPID" ] && eno kill -9 "$TORPID" && eno wait $!
     print G " * Killed $TORPID"
 
     print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
