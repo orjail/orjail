@@ -476,9 +476,11 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
   chown "$USERNAME" "$TORCONFIGFILE"
+  if [ -f /etc/tor/torrc ]; then
+    echo '%include /etc/tor/torrc' >> "$TORCONFIGFILE"
+  fi
 
-  cat > "$TORCONFIGFILE" <<EOF
-  %include /etc/tor/torrc
+  cat >> "$TORCONFIGFILE" <<EOF
   DataDirectory /tmp/orjail-${NAME}
   AutomapHostsSuffixes .onion,.exit
   AutomapHostsOnResolve 1
