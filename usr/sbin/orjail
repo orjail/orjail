@@ -478,6 +478,7 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   chown "$USERNAME" "$TORCONFIGFILE"
 
   cat > "$TORCONFIGFILE" <<EOF
+  %include /etc/tor/torrc
   DataDirectory /tmp/orjail-${NAME}
   AutomapHostsSuffixes .onion,.exit
   AutomapHostsOnResolve 1
@@ -487,6 +488,7 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   TransPort ${IPHOST}:${TRANSPORT}
   DNSPort ${IPHOST}:${DNSPORT}
   SOCKSPort 0
+  RunAsDaemon 1
 EOF
 
   if [[ "$HIDDENSERVICE" = y ]]; then
@@ -512,7 +514,7 @@ EOF
 
   # executing tor
   print G " * Executing Tor..."
-  $TORBIN --quiet -f "$TORCONFIGFILE" &> /dev/null &
+  eno "$TORBIN" -f "$TORCONFIGFILE"
 else
   print Y "$NAME network namespace already exists!"
 fi
