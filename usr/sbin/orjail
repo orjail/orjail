@@ -96,8 +96,10 @@ eno() {
 # kill tor, remove network namespace, cleanup added iptables rules
 cleanup() {
   if [ "$NOSETUPERROR" != y ]; then
-    ERROR_COMMAND=$(eval echo "${BASH_COMMAND//\"/\\\"}")
-    printv R "[Error] $ERROR_COMMAND"
+    printv R "[Error] in command: $BASH_COMMAND"
+    if [ "$VERBOSE" != y ]; then
+      printv R "[Error] Enable verbose mode to debug (using -v)"
+    fi
   fi
   set +e
 
@@ -516,7 +518,11 @@ EOF
 
   # executing tor
   print G " * Executing Tor..."
-  eno "$TORBIN" -f "$TORCONFIGFILE"
+  if [ "$VERBOSE" != y ]; then
+     "$TORBIN" -f "$TORCONFIGFILE" &>/dev/null
+  else
+     "$TORBIN" -f "$TORCONFIGFILE"
+  fi
 else
   print Y "$NAME network namespace already exists!"
 fi
