@@ -218,10 +218,6 @@ fi
 # The tool
 # ~~~~~~~~
 
-# exit on error, and call cleanup on exit
-set -e
-trap cleanup EXIT
-
 # Arguments check
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -383,6 +379,10 @@ fi
 if [ "$1" = "" ]; then
   help_and_exit 1
 fi
+
+# exit on error, and call cleanup on exit
+set -e
+trap cleanup EXIT
 
 # Check linux kernel
 if [ "$(uname)" != "Linux" ]; then
