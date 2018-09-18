@@ -27,6 +27,7 @@ TRANSPORT=9040
 DNSPORT=5354
 SUDOBIN="$(command -v sudo)"
 NOSETUPERROR=n
+HOSTTORRC=n
 
 # Functions
 # ~~~~~~~~~
@@ -169,7 +170,8 @@ help_and_exit() {
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
-  print N "    -s, --shell        Execute a shell."
+  print N "    -s, --shell        Execute a shell (using your current one)"
+  print N "        --host-torrc   Include your torrc host."
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "        --trans-port <port>"
@@ -311,7 +313,12 @@ while [[ $# -gt 0 ]]; do
       [ "$TRANSPORT" ] || die "$key requires an argument."
     ;;
 
-     # DnsPort
+    # EnableHostTorrc
+    --host-torrc)
+      HOSTTORRC=y
+    ;;
+
+    # DnsPort
     --dns-port)
       DNSPORT="$2"
       shift
@@ -478,7 +485,7 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
   chown "$USERNAME" "$TORCONFIGFILE"
-  if [ -f /etc/tor/torrc ]; then
+  if [ "$HOSTTORRC" = "y" ] && [ -f /etc/tor/torrc ]; then
     echo '%include /etc/tor/torrc' >> "$TORCONFIGFILE"
   fi
 
