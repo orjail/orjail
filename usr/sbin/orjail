@@ -389,6 +389,15 @@ if [ "$(uname)" != "Linux" ]; then
   die "No Linux no party"
 fi
 
+err=0
+for cmd in ip iptables bc mkdir chown grep $FIREJAILBIN ${SUDOBIN:-su}; do
+  if ! [ -x "$(command -v "$cmd")" ]; then
+    printv R "Cannot locate $cmd executable"
+    err=1
+  fi
+done
+! [ 0 = $err ] && exit $err
+
 FIREJAILBIN=
 if [ $USEFIREJAIL = y ]; then
   firejail_version=$(firejail --version | grep -io "9.[0-9]\\{2\\}")
@@ -398,15 +407,6 @@ if [ $USEFIREJAIL = y ]; then
 
   FIREJAILBIN=firejail
 fi
-
-err=0
-for cmd in ip iptables $FIREJAILBIN ${SUDOBIN:-su}; do
-  if ! [ -x "$(command -v "$cmd")" ]; then
-    printv R "Cannot locate $cmd executable"
-    err=1
-  fi
-done
-! [ 0 = $err ] && exit $err
 
 # check if network namespace already exists
 if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
