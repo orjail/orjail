@@ -28,6 +28,7 @@ DNSPORT=5354
 SUDOBIN="$(command -v sudo)"
 NOSETUPERROR=n
 HOSTTORRC=n
+unset FIREJAILARGS
 
 # Functions
 # ~~~~~~~~~
@@ -165,7 +166,7 @@ help_and_exit() {
   print N "    -k, --keep         Don't delete namespace and don't kill tor after the execution."
   print N "    -f, --firejail     Use firejail as a security container ($SUDOBIN orjail -f pidgin)."
   print N "        --firejail-args \"<args>\""
-  print N "                       Set arguments to pass to firejail surrounded by quotes."
+  print N "                       Set arguments to pass to firejail surrounded by quotes. (\"--hostname=host --env=PS1=[orjail]\")"
   print N "    -H, --hidden <port>"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
@@ -289,7 +290,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
     --firejail-args)
-      FIREJAILARGS=( "$2" )
+      IFS=' ' read -r -a FIREJAILARGS <<< "$2"
       shift
 
       if [ "${#FIREJAILARGS[@]}" -eq 0 ]; then
@@ -545,11 +546,10 @@ NOSETUPERROR=y
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
   if [ "$SUDOBIN" ]; then
-    if [ "${FIREJAILARGS[0]}" ]; then
-      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" "${FIREJAILARGS[@]}" --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" "$@"
-    else
-      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" "$@"
-    fi
+      # shellcheck disable=SC2068
+      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" \
+        --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" \
+        ${FIREJAILARGS[@]} "$@"
   else
     su "$USERNAME" -c "$FIREJAILBIN ${FIREJAILARGS[*]} --dns=$IPHOST --netns=$NAME $*"
   fi
