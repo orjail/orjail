@@ -449,6 +449,10 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   print G " * Default routing up..."
   ip netns exec "$NAME" ip route add default via "$IPHOST"
 
+  # bring loopback interface up inside sandbox
+  print G " * Bringing orjail loopback up..."
+  ip netns exec "$NAME" ip link set lo up
+
   # resolve with tor
   print G " * Resolving via Tor"
   iptables -t nat -A  PREROUTING -i "in-$NAME" -p udp -d "$IPHOST" --dport 53 -j DNAT \
