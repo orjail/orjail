@@ -318,7 +318,7 @@ while [[ $# -gt 0 ]]; do
 
     # Select a Tor executable
     -t|--tor-exec)
-      TORBIN="$(realpath $2)"
+      TORBIN="$(realpath $(type -P $2) 2>/dev/null)"
       shift
 
     if ! [ -f "$TORBIN" ]; then
