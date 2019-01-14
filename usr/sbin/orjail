@@ -173,6 +173,7 @@ help_and_exit() {
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
   print N "    -s, --shell        Execute a shell (using your current one)"
   print N "        --host-torrc   Include your torrc host."
+  print N "    -t, --tor-exec     Select a Tor executable to use. The path can be full, relative or be in \$PATH"
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "        --trans-port <port>"
@@ -313,6 +314,16 @@ while [[ $# -gt 0 ]]; do
     # EnableHostTorrc
     --host-torrc)
       HOSTTORRC=y
+    ;;
+
+    # Select a Tor executable
+    -t|--tor-exec)
+      TORBIN="$(realpath $2)"
+      shift
+
+    if ! [ -f "$TORBIN" ]; then
+      die "This Tor executable does not exist."
+    fi
     ;;
 
     # DnsPort
