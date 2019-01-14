@@ -514,15 +514,16 @@ EOF
 
   # reuse tor host's cache
   if [ -d "/var/lib/tor" ]; then
-  mkdir "/tmp/orjail-$NAME"
   print G " * Copying host's tor cache"
-  cp -d -R /var/lib/tor/* "/tmp/orjail-${NAME}/"
+  cp -d -R /var/lib/tor "/tmp/orjail-${NAME}"
   chown -R "$USERNAME" "/tmp/orjail-${NAME}/"
   chmod -R 700 "/tmp/orjail-${NAME}/"
     if [ -f "/tmp/orjail-${NAME}/lock" ]; then
       rm "/tmp/orjail-${NAME}/lock"
     fi
-   fi
+  else
+  mkdir "/tmp/orjail-$NAME"
+  fi
 
   # executing tor
   print G " * Executing Tor..."
