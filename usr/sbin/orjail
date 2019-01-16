@@ -590,8 +590,7 @@ if [ $USEFIREJAIL = y ]; then
       ${FIREJAILARGS[@]} "$@"
   fi
 else #or without
-  if [ $NAMESPACE_EXIST = y ]; 
-  then
+  if [ $NAMESPACE_EXIST = y ]; then
     pid=$(ip netns pids "$NAME" | tail -1)
     nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
   else
