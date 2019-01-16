@@ -173,6 +173,7 @@ help_and_exit() {
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
   print N "    -s, --shell        Execute a shell (using your current one)"
   print N "        --host-torrc   Include your torrc host."
+  print N "    -t, --tor-exec     Select a Tor executable to use. The path can be full, relative or be in \$PATH"
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
   print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
   print N "        --trans-port <port>"
@@ -315,6 +316,16 @@ while [[ $# -gt 0 ]]; do
       HOSTTORRC=y
     ;;
 
+    # Select a Tor executable
+    -t|--tor-exec)
+      TORBIN="$(realpath $(type -P $2) 2>/dev/null)"
+      shift
+
+    if ! [ -f "$TORBIN" ]; then
+      die "This Tor executable does not exist."
+    fi
+    ;;
+
     # DnsPort
     --dns-port)
       DNSPORT="$2"
@@ -437,6 +448,10 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   # default route
   print G " * Default routing up..."
   ip netns exec "$NAME" ip route add default via "$IPHOST"
+
+  # bring loopback interface up inside sandbox
+  print G " * Bringing orjail loopback up..."
+  ip netns exec "$NAME" ip link set lo up
 
   # resolve with tor
   print G " * Resolving via Tor"
