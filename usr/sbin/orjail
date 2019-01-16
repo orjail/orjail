@@ -17,17 +17,17 @@ TORBIN=
 KEEP=
 HIDDENSERVICE=
 HIDDENSERVICEDIR=
-IPHOSTDEFAULT=10.200.1.1
-IPHOST=$IPHOSTDEFAULT
-IPNETNSDEFAULT=10.200.1.2
-IPNETNS=$IPNETNSDEFAULT
-NETMASKDEFAULT=24
-NETMASK=$NETMASKDEFAULT
+IPHOST=
+IPHOSTMASK=10.200.x.2
+IPNETNS=
+IPNETNSMASK=10.200.x.1
+NETMASK=30
 TRANSPORT=9040
 DNSPORT=5354
-SUDOBIN="$(command -v sudo)"
+SUDOBIN=$(command -v sudo)
 NOSETUPERROR=n
 HOSTTORRC=n
+NAMESPACE_EXIST=n
 unset FIREJAILARGS
 
 # Functions
@@ -86,6 +86,13 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+run () {
+  if [ "$SUDOBIN" ]; then
+    $SUDOBIN -u "$USERNAME" "$@"
+  else
+    su "$USERNAME" -c "$*"
+  fi
+}
 # exec no output
 eno() {
   if [ "$VERBOSE" != y ]; then
@@ -175,7 +182,7 @@ help_and_exit() {
   print N "        --host-torrc   Include your torrc host."
   print N "    -t, --tor-exec     Select a Tor executable to use. The path can be full, relative or be in \$PATH"
   print N "    -r, --routing <ip_host> <ip_ns> <netmask>"
-  print N "                       Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT."
+  print N "                       Set custom IPs. By default $IPHOSTMASK/$IPNETNSMASK/$NETMASK."
   print N "        --trans-port <port>"
   print N "                       Set tor TransPort. By default $TRANSPORT"
   print N "        --dns-port <port>"
@@ -209,11 +216,7 @@ if [ "$1" = "--inside" ]; then
 
   print G " * Executing..."
 
-  if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u "$USERNAME" "$@"
-  else
-    su "$USERNAME" -c "$*"
-  fi
+  run "$@"
   exit
 fi
 
@@ -423,7 +426,21 @@ fi
 # check if network namespace already exists
 if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
+  # generate a random available address from specified subnet mask
+  set +e
+  USEDADDR=$(ip addr show type veth| grep -Po 'inet \d+.\d+.\K(\d+)')
+  for available_subnet in $(shuf -i 1-255 -n 254); do
+    if ! echo "$USEDADDR" | eno grep "^$available_subnet$"; then
+      break
+    fi
+  done
+  set -e
+
+  IPHOST=${IPHOSTMASK//x/$available_subnet}
+  IPNETNS=${IPNETNSMASK//x/$available_subnet}
+  print G " * $IPHOST <---> $IPNETNS"
   print G " * Creating a $NAME namespace..."
+
   # add network namespace
   ip netns add "$NAME"
 
@@ -547,32 +564,41 @@ EOF
   else
      "$TORBIN" -f "$TORCONFIGFILE"
   fi
+
+  if ! [ $USEFIREJAIL = y ]; then
+    RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
+    print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
+    echo "nameserver $IPHOST" > "$RESOLVEFILE"
+    chmod a+r "$RESOLVEFILE"
+  fi
 else
   print Y "$NAME network namespace already exists!"
-fi
-
-if ! [ $USEFIREJAIL = y ]; then
-  RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
-  print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-  echo "nameserver $IPHOST" > "$RESOLVEFILE"
-  chmod a+r "$RESOLVEFILE"
+  NAMESPACE_EXIST=y
+  KEEP=y
 fi
 
 NOSETUPERROR=y
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
-  if [ "$SUDOBIN" ]; then
-      # shellcheck disable=SC2068
-      $SUDOBIN -u "$USERNAME" "$FIREJAILBIN" \
-        --noroot --private-tmp --quiet --dns="$IPHOST" --netns="$NAME" \
-        ${FIREJAILARGS[@]} "$@"
+  # shellcheck disable=SC2068
+  if [ $NAMESPACE_EXIST = y ]; then
+    run "$FIREJAILBIN" ${FIREJAILARGS[@]} --join="$NAME" "$@"
   else
-    su "$USERNAME" -c "$FIREJAILBIN ${FIREJAILARGS[*]} --dns=$IPHOST --netns=$NAME $*"
+    run "$FIREJAILBIN" \
+      --quiet --dns="$IPHOST" --name="$NAME" --netns="$NAME" \
+      --hostname=hostname --noroot --private-tmp --private-dev \
+      ${FIREJAILARGS[@]} "$@"
   fi
 else #or without
-  ip netns exec "$NAME" \
-    unshare --ipc --fork --pid --mount --mount-proc \
-    "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@"
+  if [ $NAMESPACE_EXIST = y ]; 
+  then
+    pid=$(ip netns pids "$NAME" | tail -1)
+    nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
+  else
+    ip netns exec "$NAME" \
+      unshare --ipc --fork --pid --mount --mount-proc \
+      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@"
+  fi
 fi
 
 
