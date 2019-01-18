@@ -1,39 +1,80 @@
 [![Build Status](https://travis-ci.org/orjail/orjail.svg?branch=master)](https://travis-ci.org/orjail/orjail)
 
 > ### :warning: WARNING
-> orjail is under development, use at your own risk.  
-> if you find a bug, please create an [issue](https://github.com/orjail/orjail/issues).
+> Security isn’t just about the tools you use or the software you download. It begins with understanding the unique threats you face and how you can counter those threats.
 
-## why?
-we've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
+# orjail
+**orjail** is a tool that let you create a jail around a program to force it's network traffic through tor [Tor](https://www.torproject.org/). 
+It creates a hostile environment for anything trying to discover your real ip address.
+
+
+## Install
+##### From distribution:
+
+
+##### From source
+```
+
+```
+
+## Why?
+We've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
 as [Whonix](https://www.whonix.org/) is sometimes too much, the idea is to experiment with [linux namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html) and learn by doing something useful (at least for us).
 
-## requirements
-1. a linux kernel supporting namespaces (you have it since 2008)
-1. Tor installed
-1. [firejail](https://firejail.wordpress.com/) (optional)
+## Requirements
+- Linux kernel supporting namespaces (you have it since 2008)
+- Tor installed
+- [firejail](https://firejail.wordpress.com/) (optional, but really suggested)
 
-
-## how it works
-it creates a separated network namespace (using `ip netns`) with its own network
+## How it works
+It creates a separated [network namespace](https://en.wikipedia.org/wiki/Linux_namespaces#Network_(net)) (using `ip netns`) with its own network
 interface and a link to the host interface with some iptables rules (on host)
 that force traffic generated from inside orjail to only exit via Tor (including DNS).  
-inside orjail you'll be in another pid namespace (this way you cannot switch
-namespace), and another mount namespace (we use this to show a different /etc/resolv.conf).  
+Inside **orjail** you'll be in another pid namespace (try `sudo orjail ps aux`) and another mount namespace (we use this to show a different /etc/resolv.conf).  
 
 **if you find a way to deanonimize a program running inside orjail** (also a shell with root privileges) would be nice to [share it with us](https://github.com/orjail/orjail/issues)
 
 
-## additional info
-1. `orjail` needs root permission to run
-1. `orjail` runs your program as your user
-1. `orjail` will launch a Tor instance bound to orjail interface
+## Additional info
+- orjail needs root permission to run
+- orjail runs your command as your user
+- orjail will launch a Tor instance bound to orjail interface
 
+## Usage
+> ```bash
+> orjail [options] [command]
+> ```
+> **-u, --user** \<user>  
+> Run command as \<user> (default **$USER**)
+>
+> **-f, --firejail**  
+> Use [firejail](https://firejail.wordpress.com) as a security container
+>
+> **--firejail-args** "\<args>"  
+> Set arguments to pass to firejail surrounded by quotes.  
+> eg. "--hostname=host --env=PS1=[orjail]"
+>
+>
+> **--host-torrc**  
+> Include your torrc host
+>
+> **-t, --tor-exec** \<torpath>  
+> Select a Tor executable to use. The path can be full, relative or be in $PATH (default **tor**)
+>
+> **-s, --shell**  
+> Execute a shell (default **$SHELL**)
+>
+>
+> **-k, --keep**  
+> Don't delete namespace and don't kill tor after the execution.
+>
+> **-n, --name <name>**  
+> Set a custom namespace name (default **orjail**)
 
-## usage examples: 
+## Example
 
-#### an example to see what are we talking about (try yourself with ps aux, ls)
-```
+##### An example to understand what are we talking about:
+```bash
 $ sudo orjail ifconfig
 out-orjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 10.200.1.2  netmask 255.255.255.0  broadcast 0.0.0.0
@@ -45,39 +86,45 @@ out-orjail: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 ```
 
-#### run an hidden service inside orjail (you'll find your address inside `examples/hostname`)
-`sudo orjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
-
-#### getting an homepage content with curl via Tor
+#### Get homepage content with curl via Tor
 `sudo orjail curl autistici.org > autistici.org `
 
-#### same as before with another user
+#### Same as before with another user
 `sudo orjail -u another_user curl autistici.org`
 
-#### "resolve" a onion address (not so usefull, just to show that .onion resolving works)
+#### "Resolve" an onion address (not so usefull, just to show that .onion resolving works)
 `sudo orjail dig wi7qkxyrdpu5cmvr.onion`
 
-#### get an onion webserver content via Tor:
+#### Run an hidden service inside orjail (you'll find your address inside `examples/hostname`)
+`sudo orjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
+
+#### Get an onion webserver content via Tor:
 `sudo orjail curl wi7qkxyrdpu5cmvr.onion`
 
-#### open a firefox that could reach internet via Tor only:
+#### Open a firefox that could reach internet via Tor only:
 `sudo orjail firefox -P /tmp/tmpprofile`
 
 > ### :warning:
 > firefox has a flag that blocks .onion resolution by default, change it in **about:config**/**network.dns.blockDotOnion**.  
 >
-> **running a browser inside orjail is not safe, please use Tor Browser instead**
+> **running a browser inside orjail is not safe, please use [Tor Browser](https://www.torproject.org/projects/torbrowser.html.en) instead**
 
-#### get an anonymous shell
+#### Get an anonymous shell
 `sudo orjail -s`
 
-#### run pidgin in verbose mode
+#### Run pidgin in verbose mode
 `sudo orjail -v pidgin`
 
-#### keep the namespace after exit so we can start another program in same ns 
+#### Keep the namespace after exit so we can start another program in same ns 
 `sudo orjail -k ls`
 
 #### Use `firejail` as a security sandbox to join orjail network namespace
 `sudo orjail -f thunderbird`
 
-Made with :heart: by [_TO*hacklab](https://autistici.org/underscore)
+## Know issues
+- dbus
+- X
+
+
+---
+Made with  :heart: by [_to hacklab](https://autistici.org/underscore)
