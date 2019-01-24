@@ -28,6 +28,7 @@ SUDOBIN=$(command -v sudo)
 NOSETUPERROR=n
 HOSTTORRC=n
 NAMESPACE_EXIST=n
+PRIVATE_HOME=n
 unset FIREJAILARGS
 
 # Functions
@@ -175,6 +176,7 @@ help_and_exit() {
   print N "        --firejail-args \"<args>\""
   print N "                       Set arguments to pass to firejail surrounded by quotes. (\"--hostname=host --env=PS1=[orjail]\")"
   print N "    -H, --hidden <port>"
+  print N "    -p, --private      Private home"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
@@ -209,10 +211,28 @@ if [ "$1" = "--inside" ]; then
   shift
   VERBOSE="$1"
   shift
+  PRIVATE_HOME="$1"
+  shift
+  NAME="$1"
+  shift
+
 
   print G " * Replacing resolv.conf..."
   mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf || \
     error "Failed to mount /etc/resolv.conf."
+
+  if [ "$PRIVATE_HOME" = "y" ]; then
+    DIR="/home/$USERNAME/.orjail/$NAME"
+    print G " * Mount a private /home/$USERNAME from $DIR"
+    if ! [ -d "$DIR" ]; then
+      mkdir -p "$DIR"
+      echo "PS1=\"[orjail@$NAME] %n@%m:%~%#  \"" > "$DIR"/.zshrc
+      echo "PS1=\"[orjail@$NAME] \[\e]0;\u@\h: \w\a\]$  \"" > "$DIR"/.bashrc
+    fi
+    mount --bind -o users "/home/$USERNAME/.orjail/$NAME" "/home/$USERNAME" || \
+      error "Failed to mount /home/$USERNAME"
+    cd "/home/$USERNAME"
+   fi
 
   print G " * Executing..."
 
@@ -249,6 +269,10 @@ while [[ $# -gt 0 ]]; do
 
     -v|--verbose)
       VERBOSE=y
+      ;;
+
+    -p|--private)
+       PRIVATE_HOME=y
       ;;
 
     -k|--keep)
@@ -420,9 +444,12 @@ if [ $USEFIREJAIL = y ]; then
 	  die "orjail requires at least firejail 0.9.44.10 to run."
   fi
 
+  if [ "$PRIVATE_HOME" = "y" ]; then
+    FIREJAILARGS+=("--private=/home/$USERNAME/.orjail/$NAME")
+  fi
+
   FIREJAILBIN=firejail
 fi
-
 # check if network namespace already exists
 if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 
@@ -586,7 +613,7 @@ if [ $USEFIREJAIL = y ]; then
   else
     run "$FIREJAILBIN" \
       --quiet --dns="$IPHOST" --name="$NAME" --netns="$NAME" \
-      --hostname=hostname --noroot --private-tmp --private-dev \
+      --hostname=host --noroot --private-tmp --private-dev \
       ${FIREJAILARGS[@]} "$@"
   fi
 else #or without
@@ -596,7 +623,7 @@ else #or without
   else
     ip netns exec "$NAME" \
       unshare --ipc --fork --pid --mount --mount-proc \
-      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$@"
+      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$PRIVATE_HOME" "$NAME" "$@"
   fi
 fi
 
