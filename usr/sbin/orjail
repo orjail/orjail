@@ -16,7 +16,6 @@ VERBOSE=
 TORBIN=
 KEEP=
 HIDDENSERVICE=
-HIDDENSERVICEDIR=
 IPHOST=
 IPHOSTMASK=10.200.x.2
 IPNETNS=
@@ -480,13 +479,13 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   ip link set "out-$NAME" netns "$NAME"
 
   ## setup ip address of host interface
-  print G " * Setting up IP address of host interface..."
-  ip addr add "$IPHOST"/"$NETMASK" dev "in-$NAME"
+  print G " * Setting up IP address of host interface ($IPHOST/$NETMASK)"
+  ip addr add "$IPHOST/$NETMASK" dev "in-$NAME"
   ip link set "in-$NAME" up
 
   # setup ip address of peer
-  print G " * Setting up IP address of peer interface..."
-  ip netns exec "$NAME" ip addr add "$IPNETNS"/"$NETMASK" dev "out-$NAME"
+  print G " * Setting up IP address of peer interface ($IPNETNS/$NETMASK)"
+  ip netns exec "$NAME" ip addr add "$IPNETNS/$NETMASK" dev "out-$NAME"
   ip netns exec "$NAME" ip link set "out-$NAME" up
 
   # default route
@@ -514,7 +513,6 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
   iptables -I INPUT -i "in-$NAME" -p tcp --destination "$IPHOST" --dport "$TRANSPORT" -j ACCEPT
   if [[ $HIDDENSERVICE = y ]]; then
     iptables -I INPUT -i "in-$NAME" -p tcp --source "$IPNETNS" --sport "$HSERVICEPORT" -j ACCEPT
-    iptables -I INPUT -i "in-$NAME" -p tcp --destination "$IPNETNS" --dport "$HSERVICEPORT" -j ACCEPT
   fi
   # while we inserted the rules above, the DROP rule must be appended instead
   iptables -A INPUT -i "in-$NAME" -j DROP
@@ -563,12 +561,12 @@ if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
 EOF
 
   if [[ "$HIDDENSERVICE" = y ]]; then
-    if [[ "$HIDDENSERVICEDIR" ]]; then
-      echo "HiddenServiceDir $(realpath "$HIDDENSERVICEDIR")" >> "$TORCONFIGFILE"
-    else
-      echo "HiddenServiceDir /tmp/orjail-$NAME" >> "$TORCONFIGFILE"
-    fi
-    echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT" >> "$TORCONFIGFILE"
+    HIDDENSERVICEDIR=${HIDDENSERVICEDIR:-/tmp/orjail-$NAME}
+    HIDDENSERVICEDIR=$(realpath "$HIDDENSERVICEDIR")
+    print G " * Hidden Service Dir $HIDDENSERVICEDIR"
+    { echo "HiddenServiceDir $HIDDENSERVICEDIR" >> "$TORCONFIGFILE";
+      echo "HiddenServiceVersion 3" >> "$TORCONFIGFILE";
+      echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT"; } >> "$TORCONFIGFILE"
   fi
 
   # reuse tor host's cache
@@ -590,6 +588,11 @@ EOF
      "$TORBIN" -f "$TORCONFIGFILE" &>/dev/null
   else
      "$TORBIN" -f "$TORCONFIGFILE"
+  fi
+
+  if [[ "$HIDDENSERVICE" = y ]]; then
+    print G " * Your hidden service domain:"
+    cat "$HIDDENSERVICEDIR"/hostname
   fi
 
   if ! [ $USEFIREJAIL = y ]; then
