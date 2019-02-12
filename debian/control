@@ -8,7 +8,7 @@ Source: orjail
 Section: misc
 Priority: optional
 Maintainer: Patrick Schleizer <adrelanos@riseup.net>
-Build-Depends: debhelper (>= 9), genmkfile, ruby-ronn
+Build-Depends: debhelper (>= 9), ruby-ronn
 Homepage: https://github.com/orjail/orjail
 Vcs-Browser: https://github.com/orjail/orjail
 Vcs-Git: https://github.com/orjail/orjail.git
