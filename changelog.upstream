@@ -1,3 +1,402 @@
+commit af778d7bbe0142ee0fac8ea3327e3054751ffb8f
+Author: lesion <lesion@autistici.org>
+Date:   Tue Feb 12 16:14:22 2019 +0100
+
+    remove genmkfile as dev-deps
+
+commit e46890fe0a05187ee721de1fbae728f81f097d32
+Author: lesion <lesion@autistici.org>
+Date:   Tue Feb 12 15:55:20 2019 +0100
+
+    fix #51 use standalone genmkfile
+
+commit 58ebbea23725faaa00c6af1d9e3bc6a296c7ee60
+Author: lesion <lesion@autistici.org>
+Date:   Thu Feb 7 23:33:02 2019 +0100
+
+    fix and clean hidden service usage
+
+commit 9d315359d3b3bed90f5b54be9fee0806851c0926
+Author: lesion <lesion@autistici.org>
+Date:   Thu Jan 24 22:42:03 2019 +0100
+
+    fix #53, add -p flag to specify a private home
+
+commit b620a184728c2ec3890a4c51a39f268d87bfb7cc
+Author: lesion <lesion@autistici.org>
+Date:   Fri Jan 18 16:49:11 2019 +0100
+
+    better documentation, ref #42 #51
+
+commit 6a71b656657fd7e869010cb5a1f891c62544e4c7
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 20:56:13 2019 +0100
+
+    minor
+
+commit 1717cf4927c6c8cfb22d4cd5298f8c1fa8f12175
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 19:19:20 2019 +0100
+
+    fix #5, allow multiple ns and join existent ns
+    
+    - clean sudo/su support defining a `run` method
+    - generate random ip for host interface so multiple orjail instance
+      could be possible without specifing manual routing
+      - use /30 as netmask (only 2 host)
+      - join an already created namespace is now allowed:
+    
+      complex example:
+    
+    sudo orjail -n weechat -v -f --firejail-args "--noblacklist=/usr/sbin"
+    weechat
+    
+    sudo orjail -n weechat -v -f /usr/sbin/bitlbee -D
+
+commit 507cbe4c605f8f6719462afe33ee765ae5033f59
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 18:59:49 2019 +0100
+
+    minor
+
+commit a6cdff4666dc23e15f6bd313cfc2395b5d01ba55
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 18:57:09 2019 +0100
+
+    use variable when we have it
+
+commit 7f546bf8af59fbb782ef14b38238eab42b997c6e
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 18:54:30 2019 +0100
+
+    fix TORBIN path
+
+commit 9da8147d94053b6025c68121f9b9e6b541fd30e6
+Merge: fa91b88 1b33598
+Author: lesion <lesion@autistici.org>
+Date:   Wed Jan 16 18:08:15 2019 +0100
+
+    Merge remote-tracking branch 'phantomcraft/master' into dev
+
+commit 1b335980408311680f8642060f32c00aa29e373f
+Author: phantomcraft <39815480+phantomcraft@users.noreply.github.com>
+Date:   Mon Jan 14 22:27:39 2019 +0000
+
+    Ooops...
+
+commit 44c3c6c5c1b527d1f281be44d6d72a70f588951c
+Author: phantomcraft <39815480+phantomcraft@users.noreply.github.com>
+Date:   Mon Jan 14 22:16:52 2019 +0000
+
+    Bring up loopback interface inside orjail sandbox.
+    
+    Many programs require a loopback address for listening.
+
+commit a893c930f5650fba9c4b6b768c4219b6c72a7508
+Author: phantomcraft <39815480+phantomcraft@users.noreply.github.com>
+Date:   Mon Jan 14 22:12:08 2019 +0000
+
+    Fix cache dir copy
+    
+    Copy the cache dir as a new data dir for orjail, if it doesn't exist just create a new empty folder in /tmp
+
+commit 36375651b82184dbff131ccd01b057c4c912da2b
+Author: phantomcraft <39815480+phantomcraft@users.noreply.github.com>
+Date:   Mon Jan 14 22:07:14 2019 +0000
+
+    Option to select the Tor path.
+
+commit fa91b8836db952372193a8226b1eac11c1a3a01f
+Author: phantomcraft <39815480+phantomcraft@users.noreply.github.com>
+Date:   Mon Jan 14 21:53:07 2019 +0000
+
+    Fix tor cache copy
+    
+    It will copy Tor cache dir as a new orjail data dir, if the cache folder doesn't exist, a new empty folder will be created in place.
+
+commit a5c561f088a3bafb5a54e0925bb91bb3a17cdb76
+Author: lesion <lesion@autistici.org>
+Date:   Thu Sep 27 12:39:28 2018 +0000
+
+    treat FIREJAILARGS as array
+    
+    this fix issues when additional arguments
+    has to be passed to firejail:
+    
+    `sudo usr/sbin/orjail --firejail-args "--env=PS1=[orjail|\h]|\u\w\a\$
+    --hostname=antani" -f bash --norc`
+
+commit efea5a04f1911f4c0300a460bd3cca8476e44c8f
+Author: lesion <lesion@autistici.org>
+Date:   Wed Sep 19 01:48:04 2018 +0200
+
+    check all used binary existence (bc, grep, mkdir)
+
+commit 10f5f7b0a7a855287e395f4735519807f723186b
+Author: lesion <lesion@autistici.org>
+Date:   Wed Sep 19 01:45:50 2018 +0200
+
+    move error catching before help&exit
+
+commit 044cd9ee2c6ce15386c3d3a1b8110331ef8c8630
+Author: lesion <lesion@autistici.org>
+Date:   Wed Sep 19 01:10:18 2018 +0200
+
+    torrc configuration from host inclusion by flag
+    
+    introducing --host-torrc flag to include host torrc
+    in tor launched by orjail. This was enabled by default
+    but causing to many strange things :)
+    would be nice to specify a path within this option
+
+commit 00961d51514b68b5524356e15b74bc23ef59b2c0
+Author: lesion <lesion@autistici.org>
+Date:   Wed Sep 19 00:52:53 2018 +0200
+
+    print raw $BASH_COMMAND on error
+    
+    in case of error, BASH_COMMAND contains
+    the command that throw the error (catched by
+    the trap).
+    As the command is with variables (as example:
+    $TORBIN" -f "$TORCONFIGFILE"), I was evaluating
+    it to show the real command to the user.
+    this is not always possible because if the command
+    contains a &> /dev/null this will be evaluated to
+    showing an empty string to user.
+    This restore the raw command plus a message if -v
+    flag was not specified.
+
+commit 2919180be576d786dc53dfab45590f2113ca3ff8
+Author: lesion <lesion@autistici.org>
+Date:   Tue Sep 18 23:27:30 2018 +0200
+
+    minor typo
+
+commit 4d3c3c49d6fe1f424634b23bf494dd1c8ab5bd87
+Author: lesion <lesion@autistici.org>
+Date:   Fri Sep 7 00:03:13 2018 +0200
+
+    use host's torrc only if it exists
+
+commit 783405e18c77a58b8047fde9c3916f0f3b7b18aa
+Author: lesion <lesion@autistici.org>
+Date:   Thu Sep 6 23:47:21 2018 +0200
+
+    include host's torrc #48 / RunAsDaemon
+
+commit ba9585f06547a01e3a51cc5ee267e57ffc60d7d4
+Author: lesion <lesion@autistici.org>
+Date:   Thu Sep 6 22:54:06 2018 +0200
+
+    minor
+
+commit eddf5e2106f1cbd1e5bcc7ec0ba51b436cdd7979
+Author: lesion <lesion@autistici.org>
+Date:   Tue Sep 4 00:40:41 2018 +0200
+
+    enclose single arguments into quotes
+
+commit 09ccefb9b9b82ba295a477a0115dcc70aac8a1ef
+Author: lesion <lesion@autistici.org>
+Date:   Tue Sep 4 00:39:49 2018 +0200
+
+    better iptables rules remover
+
+commit aca5c8a24cfd4022dbbdaf218f4965f55440fd8a
+Author: lesion <lesion@autistici.org>
+Date:   Tue Sep 4 00:32:57 2018 +0200
+
+    print the command that triggered the error
+
+commit 2f2aca6c0b74feecab212c917d64f608e1e98ae0
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:24:38 2018 +0200
+
+    avoid ERR interrupt loop on cleanup
+
+commit 0a5d6f5a14e2109c089ba57fd4d896870f2ca1a0
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:22:30 2018 +0200
+
+    iptables enforcement
+
+commit 49d6636bfd4f492490633eede1f9d934350a5c58
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:14:16 2018 +0200
+
+    do not keep tor/namespace if not specified
+
+commit fe80aeb5cce8ce96716db117de0bcb98d10d5520
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:13:30 2018 +0200
+
+    cleaner torrc creation
+
+commit ef2999c6b53745e217134c40ab6e8179745958e5
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:12:14 2018 +0200
+
+    fix a bug using firejail without --firejail-args
+
+commit b42f3f81343dd48a3e342c6fd9aad2174266a8e5
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:10:41 2018 +0200
+
+    minor cleaning
+
+commit 72dffe7e1ee2ca64e5fb0a8840c3d27a9dfa7c94
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:07:17 2018 +0200
+
+    fix #45 / reuse host's Tor cache
+
+commit 204c8f65482e4cf028ec5ba05d98e365194a91a0
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:06:06 2018 +0200
+
+    fix #46 / better error/exit handler
+
+commit 1ca1f73cadd2df9132499deab28bc7cec410dc80
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 01:01:18 2018 +0200
+
+    fix #44 / clean all orjail iptables rules
+
+commit db31ef04e0be6d4f345622dcefe371239a766c01
+Author: lesion <lesion@autistici.org>
+Date:   Mon Sep 3 00:58:23 2018 +0200
+
+    resolve.conf not needed when using firejail
+
+commit c87811cc282ea22d72d9416e850799f55379cffc
+Author: lesion <lesion@autistici.org>
+Date:   Thu Aug 30 23:38:34 2018 +0200
+
+    start to hate shellcheck :P
+    
+    why do we need all those checks on iptables ?
+
+commit 7254c81c6896f6a8d4fabe8a6b1ee5b5388a4fbd
+Author: lesion <lesion@autistici.org>
+Date:   Thu Aug 30 23:28:39 2018 +0200
+
+    fix udp packets leak when fwd enabled on host
+    
+    see #43
+
+commit 1dccc8e66b9b000e400179a1d290c57639043d61
+Author: lesion <lesion@autistici.org>
+Date:   Wed Aug 29 01:11:28 2018 +0200
+
+    fix #39
+
+commit c87fbe9b2d96132224f18853dd25c41f1111a989
+Author: lesion <lesion@autistici.org>
+Date:   Wed Aug 29 01:01:54 2018 +0200
+
+    fix #30
+
+commit 7d314261ad2392de79e90b6e06bc2773a85bde7c
+Author: lesion <lesion@autistici.org>
+Date:   Wed Aug 29 00:10:29 2018 +0200
+
+    always shows output on verbose mode
+
+commit fe612dce4a17c8df73400519461056769b99685e
+Merge: 8c6e173 9a13817
+Author: lesion <lesion@autistici.org>
+Date:   Tue Aug 28 22:20:45 2018 +0200
+
+    Merge branch 'bakulf-master'
+
+commit 9a138176654644a218075a002ef25f576fda92ca
+Author: lesion <lesion@autistici.org>
+Date:   Tue Aug 28 22:20:07 2018 +0200
+
+    minor and fix #34
+
+commit 0fa59d24ffdede55f8f23805a19d66aaa7cbf78c
+Author: Andrea Marchesini <baku@ippolita.net>
+Date:   Tue Aug 28 15:20:28 2018 +0200
+
+    Issue #34 - better stderr/stdout handling
+
+commit 8c6e173ec5747425582f319da4c3569db29a61cb
+Merge: ff63593 e31cf6f
+Author: gibix <gibix@riseup.net>
+Date:   Mon Aug 27 10:02:36 2018 +0200
+
+    Merge pull request #33 from adrelanos/patch-4
+    
+    formatting
+
+commit e31cf6fc2e4936b7739acbd156d81a15f458027b
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Mon Aug 27 02:00:37 2018 -0400
+
+    formatting
+
+commit ff63593c9e4e5b686f0a7b68c50aae3592ab3705
+Author: lesion <lesion@autistici.org>
+Date:   Sat Aug 25 22:58:15 2018 +0200
+
+    fix #29 and #31 / exit with exit code of application
+
+commit a2ecab264493d0c0db500042ffd9dd7db72f7356
+Author: lesion <lesion@autistici.org>
+Date:   Sun Aug 26 22:10:59 2018 +0200
+
+    Revert "fix #6 / exit with exit code of application"
+    
+    This reverts commit 362f73f3bbdefd14a45baf8a836b81c83c9803a2.
+
+commit 362f73f3bbdefd14a45baf8a836b81c83c9803a2
+Author: lesion <lesion@autistici.org>
+Date:   Sat Aug 25 22:58:15 2018 +0200
+
+    fix #6 / exit with exit code of application
+
+commit 04d387ccfd8b53824c730e47fbcd794d9e9a0222
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Sun Aug 19 15:01:20 2018 +0000
+
+    Debian packaging
+    
+    fixes https://github.com/orjail/orjail/issues/24
+
+commit afa3801023b6ba42268e6e6cf59e9b7ef0f7d7b9
+Merge: f32fb25 788f055
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 20 09:13:12 2018 +0200
+
+    Merge branch 'adrelanos-patch-3'
+
+commit 788f0550cf0abadd8a8ed2e838c26b6e3e07c70a
+Merge: c1eb7d1 df3ff43
+Author: lesion <lesion@autistici.org>
+Date:   Mon Aug 20 09:10:44 2018 +0200
+
+    Merge branch 'master' into patch-3
+
+commit df3ff43f3b2b34a49ff558638200b71b806a0c7c
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Sun Aug 19 22:23:05 2018 +0800
+
+    typo
+
+commit 7739897d8d08b03d7bd8b59fb7f994718e4b9b7d
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Sun Aug 19 22:20:15 2018 +0800
+
+    typo
+
+commit c1eb7d1d8323b023558c73042a83b3dcac36b0d8
+Author: Patrick Schleizer <adrelanos@riseup.net>
+Date:   Sun Aug 19 15:02:45 2018 +0000
+
+    typo
+
 commit f32fb25c19ff3410f9159c444b581c088d96f917
 Author: gibix <gibix@riseup.net>
 Date:   Mon Aug 13 16:27:13 2018 +0200
