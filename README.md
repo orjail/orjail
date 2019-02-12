@@ -15,7 +15,15 @@ git clone https://github.com/orjail/orjail.git
 cd orjail
 sudo make install
 ```
-#
+##### Debian / Ubuntu
+We provide a `.deb` package you can download from
+[here](https://github.com/orjail/orjail/releases/latest) and install with a
+simple:
+
+
+```
+sudo dpkg -i orjail*.deb
+```
 
 ## Why?
 We've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
