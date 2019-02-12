@@ -43,15 +43,12 @@ Force programs to exclusively use Tor network.
 
   * -f, --firejail
 
-    Use firejail as a security container ($SUDOBIN orjail -f pidgin).
+    Use firejail as a security container (sudo firejail -f pidgin).
 
   * --firejail-args <args>
 
     Set arguments to pass to firejail surrounded by quotes.
 
-  * -y, --yes
-
-    Answer all questions with \"y\" (orjail -y pidgin).
 
   * -H, --hidden <port>
 
@@ -67,15 +64,15 @@ Force programs to exclusively use Tor network.
 
   * -r, --routing <ip_host> <ip_ns> <netmask>
 
-    Set custom IPs. By default $IPHOSTDEFAULT/$IPNETNSDEFAULT/$NETMASKDEFAULT.
+    Set custom IP.
 
   * --trans-port <port>
 
-    Set tor TransPort. By default $TRANSPORT
+    Set tor TransPort. By default 9040
 
   * --dns-port <port>
 
-    Set custom DnsPort. By default $DNSPORT
+    Set custom DnsPort. By default 5354
 
   * --port-range <port>-<port>
 
@@ -132,4 +129,4 @@ Use `firejail` as a security sandbox to join orjail network namespace
 https://orjail.github.io/
 
 ## AUTHOR
-This man page has been written by Patrick Schleizer (adrelanos@riseup.net).
+This man page has been written by Patrick Schleizer (adrelanos@riseup.net) and lesion (lesion@autistici.org)
