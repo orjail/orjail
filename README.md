@@ -5,17 +5,17 @@
 
 # orjail
 **orjail** is a tool that let you create a jail around a program to force it's network traffic through tor [Tor](https://www.torproject.org/). 
-It creates a hostile environment for anything trying to discover your real ip address.
+It creates a hostile environment for anything trying to discover your real IP address.
 
 
 ## Install
-##### From distribution:
-
-
 ##### From source
 ```
-
+git clone https://github.com/orjail/orjail.git
+cd orjail
+sudo make install
 ```
+#
 
 ## Why?
 We've tried to deanonimize a program executed in torsocks environment and that was not so difficult as torsocks use LD_PRELOAD, so you only need to statically compile your stuff.
