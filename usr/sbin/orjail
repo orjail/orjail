@@ -581,6 +581,7 @@ EOF
     fi
   else
   mkdir "/tmp/orjail-$NAME"
+  chown "$USERNAME" "/tmp/orjail-${NAME}"
   fi
 
   # executing tor
