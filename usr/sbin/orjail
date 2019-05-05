@@ -220,8 +220,8 @@ if [ "$1" = "--inside" ]; then
 
 
   print G " * Replacing resolv.conf..."
-  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf || \
-    error "Failed to mount /etc/resolv.conf."
+  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
+    die "Failed to mount /etc/resolv.conf."
 
   if [ "$PRIVATE_HOME" = "y" ]; then
     DIR="$USERHOME/.orjail/$NAME"
@@ -233,7 +233,7 @@ if [ "$1" = "--inside" ]; then
         :
     fi &&
       mount --bind -o users "$DIR" "$USERHOME" ||
-      error "Failed to mount $USERHOME"
+      die "Failed to mount $USERHOME"
     cd "$USERHOME"
    fi
 
