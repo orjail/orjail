@@ -450,7 +450,7 @@ if [ $USEFIREJAIL = y ]; then
   FIREJAILBIN=firejail
 fi
 # check if network namespace already exists
-if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
+if ! ip netns list "$NAME" | eno grep . ; then
 
   # generate a random available address from specified subnet mask
   set +e
@@ -605,6 +605,10 @@ else
   print Y "$NAME network namespace already exists!"
   NAMESPACE_EXIST=y
   KEEP=y
+
+  if ! ip netns pids "$NAME" | eno grep . ; then
+    die "No process found for namespace $NAME. Please specify another/no namespace."
+  fi
 fi
 
 NOSETUPERROR=y
