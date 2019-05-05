@@ -346,11 +346,11 @@ while [[ $# -gt 0 ]]; do
     # Select a Tor executable
     -t|--tor-exec)
       TORBIN=$(command -v "$2")
-      shift
 
-    if ! [ -f "$TORBIN" ]; then
-      die "This Tor executable does not exist."
-    fi
+      if ! [ -x "$TORBIN" ]; then
+        die "Tor executable '$2' is invalid."
+      fi
+      shift
     ;;
 
     # DnsPort
@@ -409,7 +409,7 @@ if [[ $EUID -ne 0 ]]; then
    die "$DEFAULTNAME must be run as root."
 fi
 
-TORBIN=$(command -v tor)
+TORBIN=${TORBIN:-$(command -v tor)}
 if ! [ -x "$TORBIN" ]; then
   die "Can't locate tor executable.";
 fi
