@@ -417,11 +417,6 @@ if ! [ -x "$TORBIN" ]; then
   die "Can't locate tor executable.";
 fi
 
-USERHOME=$(IFS=:; set -- `getent passwd $USERNAME`; echo $6)
-if [ "$USERHOME" = "" ]; then
-  die "User $USERNAME: invalid name or no home directory."
-fi
-
 # No arguments, no party
 if [ "$1" = "" ]; then
   help_and_exit 1
@@ -437,13 +432,18 @@ if [ "$(uname)" != "Linux" ]; then
 fi
 
 err=0
-for cmd in ip iptables bc mkdir chown grep $FIREJAILBIN ${SUDOBIN:-su}; do
+for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; do
   if ! [ -x "$(command -v "$cmd")" ]; then
     printv R "Cannot locate $cmd executable"
     err=1
   fi
 done
 ! [ 0 = $err ] && exit $err
+
+USERHOME=$(IFS=:; set -- `getent passwd $USERNAME`; echo $6)
+if [ "$USERHOME" = "" ]; then
+  die "User $USERNAME: invalid name or no home directory."
+fi
 
 FIREJAILBIN=
 if [ $USEFIREJAIL = y ]; then
