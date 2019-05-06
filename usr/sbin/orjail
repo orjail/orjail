@@ -459,7 +459,7 @@ if [ $USEFIREJAIL = y ]; then
   FIREJAILBIN=firejail
 fi
 # check if network namespace already exists
-if ! ip netns list "$NAME" | eno grep . ; then
+if ! ip netns list | eno grep \\b"$NAME"\\b; then
 
   # generate a random available address from specified subnet mask
   set +e
