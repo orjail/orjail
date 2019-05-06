@@ -86,6 +86,10 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+# run a command as another user
+# Note: sudo and su syntax is slightly different and, more importantly, passing
+# su arguments with spaces needs escaping quotes and/or possibly spaces; YMMV.
+# Ex.    orjail ls "/tmp/a\\ b" # systems with su but without sudo
 run () {
   if [ "$SUDOBIN" ]; then
     $SUDOBIN -u "$USERNAME" "$@"
@@ -93,6 +97,7 @@ run () {
     su "$USERNAME" -c "$*"
   fi
 }
+
 # exec no output
 eno() {
   if [ "$VERBOSE" != y ]; then
@@ -240,7 +245,7 @@ if [ "$1" = "--inside" ]; then
   print G " * Executing..."
 
   run "$@"
-  exit
+  exit $?
 fi
 
 # The tool
@@ -637,7 +642,12 @@ if [ $USEFIREJAIL = y ]; then
 else #or without
   if [ $NAMESPACE_EXIST = y ]; then
     pid=$(ip netns pids "$NAME" | tail -1)
-    nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
+    # This is like function run() - read comments there
+    if [ "$SUDOBIN" ]; then
+      nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
+    else
+      nsenter -p -n  -i -m  -t "$pid" su "$USERNAME" -c "$*"
+    fi
   else
     ip netns exec "$NAME" \
       unshare --ipc --fork --pid --mount --mount-proc \
