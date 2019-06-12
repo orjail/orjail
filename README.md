@@ -4,7 +4,7 @@
 > Security isn’t just about the tools you use or the software you download. It begins with understanding the unique threats you face and how you can counter those threats.
 
 # orjail
-**orjail** is a tool that let you create a jail around a program to force its network traffic through [Tor](https://www.torproject.org/). 
+**orjail** is a tool that lets you create a jail around a program to force its network traffic through [Tor](https://www.torproject.org/). 
 It creates a hostile environment for anything trying to discover your real IP address.
 
 
