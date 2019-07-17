@@ -1,4 +1,4 @@
-orjail(8) -- Secure Distributed Web Date
+orjail(8) -- run application over Tor
 =============================================
 
 <span class="comment">
