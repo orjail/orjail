@@ -86,6 +86,10 @@ printvn() {
   VERBOSE=$OLDVERBOSE
 }
 
+# run a command as another user
+# Note: sudo and su syntax is slightly different and, more importantly, passing
+# su arguments with spaces needs escaping quotes and/or possibly spaces; YMMV.
+# Ex.    orjail ls "/tmp/a\\ b" # systems with su but without sudo
 run () {
   if [ "$SUDOBIN" ]; then
     $SUDOBIN -u "$USERNAME" "$@"
@@ -93,6 +97,7 @@ run () {
     su "$USERNAME" -c "$*"
   fi
 }
+
 # exec no output
 eno() {
   if [ "$VERBOSE" != y ]; then
@@ -175,10 +180,11 @@ help_and_exit() {
   print N "        --firejail-args \"<args>\""
   print N "                       Set arguments to pass to firejail surrounded by quotes. (\"--hostname=host --env=PS1=[orjail]\")"
   print N "    -H, --hidden <port>"
-  print N "    -p, --private      Private home"
   print N "                       Enable Tor as an hidden service forwarding request from/to specified port."
   print N "    -d, --hiddendir <dir>"
   print N "                       Specify where to search for hidden service 'hostname' and 'private_key'."
+  print N "    -p, --private      Private home"
+  print N "                       Mount a sandboxed home directory and set current directory."
   print N "    -s, --shell        Execute a shell (using your current one)"
   print N "        --host-torrc   Include your torrc host."
   print N "    -t, --tor-exec     Select a Tor executable to use. The path can be full, relative or be in \$PATH"
@@ -198,7 +204,7 @@ help_and_exit() {
 
 # This script calls itself. yeah \o/ This part is executed only inside the
 # namespace. The arguments are:
-# --inside <username> <resolvefile> <verbose> <command> <arguments...>
+# --inside <username> <resolvefile> <verbose> <private_home> <userhome> <name> <command> <arguments...>
 if [ "$1" = "--inside" ]; then
   REALPATH=$(realpath "$0")
   REALPATH=$(dirname "$REALPATH")
@@ -212,31 +218,34 @@ if [ "$1" = "--inside" ]; then
   shift
   PRIVATE_HOME="$1"
   shift
+  USERHOME="$1"
+  shift
   NAME="$1"
   shift
 
 
   print G " * Replacing resolv.conf..."
-  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf || \
-    error "Failed to mount /etc/resolv.conf."
+  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
+    die "Failed to mount /etc/resolv.conf."
 
   if [ "$PRIVATE_HOME" = "y" ]; then
-    DIR="/home/$USERNAME/.orjail/$NAME"
-    print G " * Mount a private /home/$USERNAME from $DIR"
+    DIR="$USERHOME/.orjail/$NAME"
+    print G " * Mount a private $USERHOME from $DIR"
     if ! [ -d "$DIR" ]; then
-      mkdir -p "$DIR"
-      echo "PS1=\"[orjail@$NAME] %n@%m:%~%#  \"" > "$DIR"/.zshrc
-      echo "PS1=\"[orjail@$NAME] \[\e]0;\u@\h: \w\a\]$  \"" > "$DIR"/.bashrc
-    fi
-    mount --bind -o users "/home/$USERNAME/.orjail/$NAME" "/home/$USERNAME" || \
-      error "Failed to mount /home/$USERNAME"
-    cd "/home/$USERNAME"
+      mkdir -p "$DIR" &&
+        echo "PS1=\"[orjail@$NAME] %n@%m:%~%#  \"" > "$DIR"/.zshrc &&
+        echo "PS1=\"[orjail@$NAME] \[\e]0;\u@\h: \w\a\]$  \"" > "$DIR"/.bashrc &&
+        :
+    fi &&
+      mount --bind -o users "$DIR" "$USERHOME" ||
+      die "Failed to mount $USERHOME"
+    cd "$USERHOME"
    fi
 
   print G " * Executing..."
 
   run "$@"
-  exit
+  exit $?
 fi
 
 # The tool
@@ -345,11 +354,11 @@ while [[ $# -gt 0 ]]; do
     # Select a Tor executable
     -t|--tor-exec)
       TORBIN=$(command -v "$2")
-      shift
 
-    if ! [ -f "$TORBIN" ]; then
-      die "This Tor executable does not exist."
-    fi
+      if ! [ -x "$TORBIN" ]; then
+        die "Tor executable '$2' is invalid."
+      fi
+      shift
     ;;
 
     # DnsPort
@@ -408,7 +417,7 @@ if [[ $EUID -ne 0 ]]; then
    die "$DEFAULTNAME must be run as root."
 fi
 
-TORBIN=$(command -v tor)
+TORBIN=${TORBIN:-$(command -v tor)}
 if ! [ -x "$TORBIN" ]; then
   die "Can't locate tor executable.";
 fi
@@ -428,13 +437,18 @@ if [ "$(uname)" != "Linux" ]; then
 fi
 
 err=0
-for cmd in ip iptables bc mkdir chown grep $FIREJAILBIN ${SUDOBIN:-su}; do
+for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; do
   if ! [ -x "$(command -v "$cmd")" ]; then
     printv R "Cannot locate $cmd executable"
     err=1
   fi
 done
 ! [ 0 = $err ] && exit $err
+
+USERHOME=$(IFS=:; set -- `getent passwd $USERNAME`; echo $6)
+if [ "$USERHOME" = "" ]; then
+  die "User $USERNAME: invalid name or no home directory."
+fi
 
 FIREJAILBIN=
 if [ $USEFIREJAIL = y ]; then
@@ -444,13 +458,13 @@ if [ $USEFIREJAIL = y ]; then
   fi
 
   if [ "$PRIVATE_HOME" = "y" ]; then
-    FIREJAILARGS+=("--private=/home/$USERNAME/.orjail/$NAME")
+    FIREJAILARGS+=("--private=$USERHOME/.orjail/$NAME")
   fi
 
   FIREJAILBIN=firejail
 fi
 # check if network namespace already exists
-if ! ip netns list | eno grep -e \\b"$NAME"\\b; then
+if ! ip netns list | eno grep \\b"$NAME"\\b; then
 
   # generate a random available address from specified subnet mask
   set +e
@@ -580,6 +594,8 @@ EOF
     fi
   else
   mkdir "/tmp/orjail-$NAME"
+  chown "$USERNAME" "/tmp/orjail-${NAME}"
+  chmod -R 700 "/tmp/orjail-${NAME}"
   fi
 
   # executing tor
@@ -605,6 +621,10 @@ else
   print Y "$NAME network namespace already exists!"
   NAMESPACE_EXIST=y
   KEEP=y
+
+  if ! ip netns pids "$NAME" | eno grep . ; then
+    die "No process found for namespace $NAME. Please specify another/no namespace."
+  fi
 fi
 
 NOSETUPERROR=y
@@ -622,11 +642,16 @@ if [ $USEFIREJAIL = y ]; then
 else #or without
   if [ $NAMESPACE_EXIST = y ]; then
     pid=$(ip netns pids "$NAME" | tail -1)
-    nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
+    # This is like function run() - read comments there
+    if [ "$SUDOBIN" ]; then
+      nsenter -p -n  -i -m  -t "$pid" "$SUDOBIN" -u "$USERNAME" "$@"
+    else
+      nsenter -p -n  -i -m  -t "$pid" su "$USERNAME" -c "$*"
+    fi
   else
     ip netns exec "$NAME" \
       unshare --ipc --fork --pid --mount --mount-proc \
-      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$PRIVATE_HOME" "$NAME" "$@"
+      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$PRIVATE_HOME" "$USERHOME" "$NAME" "$@"
   fi
 fi
 
