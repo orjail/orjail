@@ -150,7 +150,7 @@ cleanup() {
 
   fi
 
-  if [ ! -z "$RESOLVEFILE" ]; then
+  if [ -n -z "$RESOLVEFILE" ]; then
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
   eno rm "$RESOLVEFILE"
   fi
@@ -444,7 +444,7 @@ for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; d
 done
 ! [ 0 = $err ] && exit $err
 
-USERHOME=$(getent passwd $USERNAME | cut -d: -f 6)
+USERHOME=$(getent passwd "$USERNAME" | cut -d: -f 6)
 if [ "$USERHOME" = "" ]; then
   die "User $USERNAME: invalid name or no home directory."
 fi
