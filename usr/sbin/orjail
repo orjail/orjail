@@ -92,7 +92,7 @@ printvn() {
 # Ex.    orjail ls "/tmp/a\\ b" # systems with su but without sudo
 run () {
   if [ "$SUDOBIN" ]; then
-    $SUDOBIN -u "$USERNAME" "$@"
+    $SUDOBIN -u "$USERNAME" --preserve-env=XDG_RUNTIME_DIR,WAYLAND_DISPLAY "$@"
   else
     su "$USERNAME" -c "$*"
   fi
