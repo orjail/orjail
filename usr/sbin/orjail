@@ -555,7 +555,6 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   print G " * Tor version is $TORVERSION"
 
   TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
-  chown "$USERNAME" "$TORCONFIGFILE"
   if [ "$HOSTTORRC" = "y" ] && [ -f /etc/tor/torrc ]; then
     echo '%include /etc/tor/torrc' >> "$TORCONFIGFILE"
   fi
@@ -581,6 +580,10 @@ EOF
       echo "HiddenServiceVersion 3" >> "$TORCONFIGFILE";
       echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT"; } >> "$TORCONFIGFILE"
   fi
+  
+  # this chown causes issues in archlinux where tmpfs seems to be protected...
+  # so call this only after the config file is ready. see PR#71
+  chown "$USERNAME" "$TORCONFIGFILE"
 
   # reuse tor host's cache
   if [ -d "/var/lib/tor" ]; then
