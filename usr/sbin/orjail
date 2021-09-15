@@ -153,6 +153,7 @@ cleanup() {
   if [ -n "$RESOLVEFILE" ]; then
   print G " * Remove the temporary resolve file $RESOLVEFILE..."
   eno rm "$RESOLVEFILE"
+  eno rm /tmp/tmpnsswitch.conf
   fi
 }
 
@@ -227,6 +228,29 @@ if [ "$1" = "--inside" ]; then
   print G " * Replacing resolv.conf..."
   mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
     die "Failed to mount /etc/resolv.conf."
+
+
+  cat > "/tmp/tmpnsswitch.conf" <<EOF
+hosts: dns files
+passwd:files
+shadow:files
+group:files
+hosts:dns files
+bootparams:files
+ethers:files
+netmasks:files
+networks:files
+protocols:files
+rpc:files
+services:files
+automount:files
+aliases:files
+EOF
+
+
+  print G " * Replacing nsswitch.conf..."
+  mount --bind -o users /tmp/tmpnsswitch.conf /etc/nsswitch.conf ||
+    die "Failed to mount /etc/nsswitch.conf."
 
   if [ "$PRIVATE_HOME" = "y" ]; then
     DIR="$USERHOME/.orjail/$NAME"
@@ -580,7 +604,7 @@ EOF
       echo "HiddenServiceVersion 3" >> "$TORCONFIGFILE";
       echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT"; } >> "$TORCONFIGFILE"
   fi
-  
+
   # this chown causes issues in archlinux where tmpfs seems to be protected...
   # so call this only after the config file is ready. see PR#71
   chown "$USERNAME" "$TORCONFIGFILE"
@@ -618,6 +642,8 @@ EOF
     print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
     echo "nameserver $IPHOST" > "$RESOLVEFILE"
     chmod a+r "$RESOLVEFILE"
+
+
   fi
 else
   print Y "$NAME network namespace already exists!"
