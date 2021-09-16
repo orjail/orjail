@@ -151,9 +151,8 @@ cleanup() {
   fi
 
   if [ -n "$RESOLVEFILE" ]; then
-  print G " * Remove the temporary resolve file $RESOLVEFILE..."
-  eno rm "$RESOLVEFILE"
-  eno rm /tmp/tmpnsswitch.conf
+    print G " * Remove the temporary resolve file $RESOLVEFILE..."
+  #eno rm "$RESOLVEFILE"
   fi
 }
 
@@ -225,32 +224,9 @@ if [ "$1" = "--inside" ]; then
   shift
 
 
-  print G " * Replacing resolv.conf..."
-  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
-    die "Failed to mount /etc/resolv.conf."
-
-
-  cat > "/tmp/tmpnsswitch.conf" <<EOF
-hosts: dns files
-passwd:files
-shadow:files
-group:files
-hosts:dns files
-bootparams:files
-ethers:files
-netmasks:files
-networks:files
-protocols:files
-rpc:files
-services:files
-automount:files
-aliases:files
-EOF
-
-
-  print G " * Replacing nsswitch.conf..."
-  mount --bind -o users /tmp/tmpnsswitch.conf /etc/nsswitch.conf ||
-    die "Failed to mount /etc/nsswitch.conf."
+#  print G " * Replacing resolv.conf..."
+#  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
+#    die "Failed to mount /etc/resolv.conf."
 
   if [ "$PRIVATE_HOME" = "y" ]; then
     DIR="$USERHOME/.orjail/$NAME"
@@ -638,11 +614,29 @@ EOF
   fi
 
   if ! [ $USEFIREJAIL = y ]; then
-    RESOLVEFILE=$(mktemp /tmp/resolveXXXXXX)
+    mkdir -p /etc/netns/${NAME}
+
+    RESOLVEFILE=/etc/netns/${NAME}/resolv.conf
     print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
     echo "nameserver $IPHOST" > "$RESOLVEFILE"
     chmod a+r "$RESOLVEFILE"
 
+    cat > "/etc/netns/${NAME}/nsswitch.conf" <<EOF
+hosts: dns files
+passwd:files
+shadow:files
+group:files
+hosts:dns files
+bootparams:files
+ethers:files
+netmasks:files
+networks:files
+protocols:files
+rpc:files
+services:files
+automount:files
+aliases:files
+EOF
 
   fi
 else
