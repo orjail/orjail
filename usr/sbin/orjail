@@ -150,9 +150,9 @@ cleanup() {
 
   fi
 
-  if [ -n "$RESOLVEFILE" ]; then
-    print G " * Remove the temporary resolve file $RESOLVEFILE..."
-  #eno rm "$RESOLVEFILE"
+  if [ -n "$ETC_DIR" ]; then
+    print G " * Remove temporary /etc dir ($ETC_DIR)..."
+    eno rm -fr "$ETC_DIR"
   fi
 }
 
@@ -212,7 +212,7 @@ if [ "$1" = "--inside" ]; then
   shift
   USERNAME="$1"
   shift
-  RESOLVEFILE="$1"
+  ETC_DIR="$1"
   shift
   VERBOSE="$1"
   shift
@@ -222,11 +222,6 @@ if [ "$1" = "--inside" ]; then
   shift
   NAME="$1"
   shift
-
-
-#  print G " * Replacing resolv.conf..."
-#  mount --bind -o users "$RESOLVEFILE" /etc/resolv.conf ||
-#    die "Failed to mount /etc/resolv.conf."
 
   if [ "$PRIVATE_HOME" = "y" ]; then
     DIR="$USERHOME/.orjail/$NAME"
@@ -239,7 +234,14 @@ if [ "$1" = "--inside" ]; then
     mount --bind -o users "$DIR" "$USERHOME" ||
       die "Failed to mount $USERHOME"
     cd "$USERHOME"
-   fi
+  fi
+
+  if [ -n "$ETC_DIR" ]; then
+    print G " * Mirroring /etc"
+    mount --bind -o users "$ETC_DIR" /etc ||
+      die "Failed to mount /etc"
+  fi
+
 
   print G " * Executing..."
 
@@ -614,14 +616,17 @@ EOF
   fi
 
   if ! [ $USEFIREJAIL = y ]; then
-    mkdir -p /etc/netns/${NAME}
+   ETC_DIR="$USERHOME/.orjail/etc/$NAME"
+   mkdir -p "$ETC_DIR"
+   cp -a /etc/. "$ETC_DIR"
 
-    RESOLVEFILE=/etc/netns/${NAME}/resolv.conf
-    print G " * Creating a temporary /etc/resolv.conf ($RESOLVEFILE)..."
-    echo "nameserver $IPHOST" > "$RESOLVEFILE"
-    chmod a+r "$RESOLVEFILE"
+    print G " * Create a temporary /etc/resolv.conf"
+    # remove it in case it's a symlink
+    rm "$ETC_DIR/resolv.conf" "$ETC_DIR/nsswitch.conf"
+    echo "nameserver $IPHOST" > "$ETC_DIR/resolv.conf"
+    chmod a+r "$ETC_DIR/resolv.conf"
 
-    cat > "/etc/netns/${NAME}/nsswitch.conf" <<EOF
+    cat > "$ETC_DIR/nsswitch.conf" <<EOF
 hosts: dns files
 passwd:files
 shadow:files
@@ -673,7 +678,7 @@ else #or without
   else
     ip netns exec "$NAME" \
       unshare --ipc --fork --pid --mount --mount-proc \
-      "$0" --inside "$USERNAME" "$RESOLVEFILE" "$VERBOSE" "$PRIVATE_HOME" "$USERHOME" "$NAME" "$@"
+      "$0" --inside "$USERNAME" "$ETC_DIR" "$VERBOSE" "$PRIVATE_HOME" "$USERHOME" "$NAME" "$@"
   fi
 fi
 
