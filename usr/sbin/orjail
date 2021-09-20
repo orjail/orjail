@@ -442,8 +442,7 @@ fi
 err=0
 for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; do
   if ! [ -x "$(command -v "$cmd")" ]; then
-    printv R "Cannot locate $cmd executable"
-    err=1
+    die "Cannot locate $cmd executable, please install all needed dependencies:\r\nsudo apt-get install bc iptables grep sudo iproute2 libc-bin"
   fi
 done
 ! [ 0 = $err ] && exit $err
