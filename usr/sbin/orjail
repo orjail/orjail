@@ -28,6 +28,7 @@ NOSETUPERROR=n
 HOSTTORRC=n
 NAMESPACE_EXIST=n
 PRIVATE_HOME=n
+ORJAIL_DIR=
 unset FIREJAILARGS
 
 # Functions
@@ -119,19 +120,14 @@ cleanup() {
   fi
   set +e
 
-  TORPID=$(cat /tmp/orjail-"$NAME"/pid 2> /dev/null)
+  TORPID=$(cat "$ORJAIL_DIR"/tor/pid 2> /dev/null)
   if [ "$KEEP" = y ]; then
     print G " * Keep Tor process $TORPID running"
     print G " * Keep $NAME namespace active"
   else
-    print G " * Remove Tor temporary configuration"
-    [ -f "$TORCONFIGFILE" ] && rm "$TORCONFIGFILE"
     print G " * Killing Tor process $TORPID"
     [ "$TORPID" ] && eno kill -9 "$TORPID" && eno wait $!
     print G " * Killed $TORPID"
-
-    print G " * Remove Tor DataDirectory: /tmp/orjail-$NAME"
-    eno rm -fr "/tmp/orjail-$NAME"
 
     print G " * Remove in-$NAME network interface"
     eno ip link del "in-$NAME"
@@ -149,12 +145,8 @@ cleanup() {
       eno iptables -t nat ${line//-A/-D}
     done
 
-
-  fi
-
-  if [ -n "$ETC_DIR" ]; then
-    print G " * Remove temporary /etc dir ($ETC_DIR)..."
-    eno rm -fr "$ETC_DIR"
+    print G " * Remove temporary orjail directory ($ORJAIL_DIR) ..."
+    eno rm -fr "$ORJAIL_DIR"
   fi
 }
 
@@ -214,7 +206,7 @@ if [ "$1" = "--inside" ]; then
   shift
   USERNAME="$1"
   shift
-  ETC_DIR="$1"
+  ORJAIL_DIR="$1"
   shift
   VERBOSE="$1"
   shift
@@ -225,8 +217,12 @@ if [ "$1" = "--inside" ]; then
   NAME="$1"
   shift
 
+  print G " * Mount a private /etc from ${ORJAIL_DIR}/etc"
+  mount --bind "$ORJAIL_DIR/etc" /etc ||
+    die "Failed to mount /etc"
+
   if [ "$PRIVATE_HOME" = "y" ]; then
-    DIR="$USERHOME/.orjail/$NAME"
+    DIR="$ORJAIL_DIR/home"
     print G " * Mount a private $USERHOME from $DIR"
     if ! [ -d "$DIR" ]; then
       mkdir -p "$DIR" &&
@@ -237,13 +233,6 @@ if [ "$1" = "--inside" ]; then
       die "Failed to mount $USERHOME"
     cd "$USERHOME"
   fi
-
-  if [ -n "$ETC_DIR" ]; then
-    print G " * Mirroring /etc"
-    mount --bind "$ETC_DIR" /etc ||
-      die "Failed to mount /etc"
-  fi
-
 
   print G " * Executing..."
 
@@ -430,22 +419,16 @@ if [ "$1" = "" ]; then
   help_and_exit 1
 fi
 
-# exit on error, and call cleanup on exit
-set -e
-trap cleanup EXIT
-
 # Check linux kernel
 if [ "$(uname)" != "Linux" ]; then
   die "No Linux no party"
 fi
 
-err=0
 for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; do
   if ! [ -x "$(command -v "$cmd")" ]; then
     die "Cannot locate $cmd executable, please install all needed dependencies:\r\nsudo apt-get install bc iptables grep sudo iproute2 libc-bin"
   fi
 done
-! [ 0 = $err ] && exit $err
 
 USERHOME=$(getent passwd "$USERNAME" | cut -d: -f 6)
 if [ "$USERHOME" = "" ]; then
@@ -460,11 +443,16 @@ if [ $USEFIREJAIL = y ]; then
   fi
 
   if [ "$PRIVATE_HOME" = "y" ]; then
-    FIREJAILARGS+=("--private=$USERHOME/.orjail/$NAME")
+    FIREJAILARGS+=("--private=$ORJAIL_DIR/home")
   fi
 
   FIREJAILBIN=firejail
 fi
+
+# exit on error, and call cleanup on exit
+set -e
+trap cleanup EXIT
+
 # check if network namespace already exists
 if ! ip netns list | eno grep \\b"$NAME"\\b; then
 
@@ -550,6 +538,12 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   iptables -A INPUT ! -i "in-$NAME" -s "$IPHOST/$NETMASK" -j DROP
   iptables -A INPUT ! -i "in-$NAME" -d "$IPHOST/$NETMASK" -j DROP
 
+  # use a dir to store a mirror /etc, a new /home if needed and a /tor data cache directory
+  ORJAIL_DIR="$USERHOME/.orjail/$NAME"
+  mkdir -p "$ORJAIL_DIR"
+  mkdir -p "$ORJAIL_DIR/etc"
+  mkdir -p "$ORJAIL_DIR/tor"
+
   # execute tor
   print G " * Creating the Tor configuration file..."
 
@@ -557,16 +551,16 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   TORVERSION="$($TORBIN --version|grep -Eo ' ([0-9.]+)'|xargs)"
   print G " * Tor version is $TORVERSION"
 
-  TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+  TORCONFIGFILE="$ORJAIL_DIR/tor/torrc"
   if [ "$HOSTTORRC" = "y" ] && [ -f /etc/tor/torrc ]; then
     echo '%include /etc/tor/torrc' >> "$TORCONFIGFILE"
   fi
 
   cat >> "$TORCONFIGFILE" <<EOF
-  DataDirectory /tmp/orjail-${NAME}
+  DataDirectory ${ORJAIL_DIR}/tor
   AutomapHostsSuffixes .onion,.exit
   AutomapHostsOnResolve 1
-  PidFile      /tmp/orjail-${NAME}/pid
+  PidFile      /${ORJAIL_DIR}/tor/pid
   User         ${USERNAME}
   VirtualAddrNetworkIPv4 ${IPNETNS}/16
   TransPort ${IPHOST}:${TRANSPORT}
@@ -576,7 +570,7 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
 EOF
 
   if [[ "$HIDDENSERVICE" = y ]]; then
-    HIDDENSERVICEDIR=${HIDDENSERVICEDIR:-/tmp/orjail-$NAME}
+    HIDDENSERVICEDIR=${HIDDENSERVICEDIR:-$ORJAIL_DIR/tor/hs}
     HIDDENSERVICEDIR=$(realpath "$HIDDENSERVICEDIR")
     print G " * Hidden Service Dir $HIDDENSERVICEDIR"
     { echo "HiddenServiceDir $HIDDENSERVICEDIR" >> "$TORCONFIGFILE";
@@ -584,24 +578,20 @@ EOF
       echo "HiddenServicePort $HSERVICEPORT $IPNETNS:$HSERVICEPORT"; } >> "$TORCONFIGFILE"
   fi
 
-  # this chown causes issues in archlinux where tmpfs seems to be protected...
-  # so call this only after the config file is ready. see PR#71
   chown "$USERNAME" "$TORCONFIGFILE"
 
   # reuse tor host's cache
   if [ -d "/var/lib/tor" ]; then
-  print G " * Copying host's tor cache"
-  cp -d -R /var/lib/tor "/tmp/orjail-${NAME}"
-  chown -R "$USERNAME" "/tmp/orjail-${NAME}/"
-  chmod -R 700 "/tmp/orjail-${NAME}/"
-    if [ -f "/tmp/orjail-${NAME}/lock" ]; then
-      rm "/tmp/orjail-${NAME}/lock"
+    print G " * Copying host's tor cache"
+    cp -d -R /var/lib/tor/. "$ORJAIL_DIR/tor/"
+
+    if [ -f "$ORJAIL_DIR/tor/lock" ]; then
+      rm "$ORJAIL_DIR/tor/lock"
     fi
-  else
-  mkdir "/tmp/orjail-$NAME"
-  chown "$USERNAME" "/tmp/orjail-${NAME}"
-  chmod -R 700 "/tmp/orjail-${NAME}"
   fi
+  chown -R "$USERNAME" "$ORJAIL_DIR/"
+  chmod -R 700 "$ORJAIL_DIR/"
+
 
   # executing tor
   print G " * Executing Tor..."
@@ -617,17 +607,16 @@ EOF
   fi
 
   if ! [ $USEFIREJAIL = y ]; then
-   ETC_DIR="$USERHOME/.orjail/etc/$NAME"
-   mkdir -p "$ETC_DIR"
-   cp -a /etc/. "$ETC_DIR"
+    print G " * Mirroring /etc"
+    cp -a /etc/. "$ORJAIL_DIR/etc/"
+    print G " * Create a temporary /etc/resolv.conf and /etc/nsswitch.conf"
 
-    print G " * Create a temporary /etc/resolv.conf"
-    # remove it in case it's a symlink
-    rm "$ETC_DIR/resolv.conf" "$ETC_DIR/nsswitch.conf"
-    echo "nameserver $IPHOST" > "$ETC_DIR/resolv.conf"
-    chmod a+r "$ETC_DIR/resolv.conf"
+    # remove resolv/nsswitch in case are symlink
+    rm "$ORJAIL_DIR/etc/resolv.conf" "$ORJAIL_DIR/etc/nsswitch.conf"
+    echo "nameserver $IPHOST" > "$ORJAIL_DIR/etc/resolv.conf"
+    chmod a+r "$ORJAIL_DIR/etc/resolv.conf"
 
-    cat > "$ETC_DIR/nsswitch.conf" <<EOF
+    cat > "$ORJAIL_DIR/etc/nsswitch.conf" <<EOF
 hosts: dns files
 passwd:files
 shadow:files
@@ -679,7 +668,7 @@ else #or without
   else
     ip netns exec "$NAME" \
       unshare --ipc --fork --pid --mount --mount-proc \
-      "$0" --inside "$USERNAME" "$ETC_DIR" "$VERBOSE" "$PRIVATE_HOME" "$USERHOME" "$NAME" "$@"
+      "$0" --inside "$USERNAME" "$ORJAIL_DIR" "$VERBOSE" "$PRIVATE_HOME" "$USERHOME" "$NAME" "$@"
   fi
 fi
 
