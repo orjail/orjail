@@ -108,6 +108,8 @@ eno() {
 }
 
 # kill tor, remove network namespace, cleanup added iptables rules
+# umount is not needed as per `man 7 mount_namespaces`:
+# "mount is implicitly unmounted because a mount namespace is removed"
 cleanup() {
   if [ "$NOSETUPERROR" != y ]; then
     printv R "[Error] in command: $BASH_COMMAND"
@@ -231,14 +233,14 @@ if [ "$1" = "--inside" ]; then
         echo "PS1=\"[orjail@$NAME] %n@%m:%~%#  \"" > "$DIR"/.zshrc &&
         echo "PS1=\"[orjail@$NAME] \\[\\e]0;\\u@\\h: \\w\\a\\]$  \"" > "$DIR"/.bashrc
     fi
-    mount --bind -o users "$DIR" "$USERHOME" ||
+    mount --bind "$DIR" "$USERHOME" ||
       die "Failed to mount $USERHOME"
     cd "$USERHOME"
   fi
 
   if [ -n "$ETC_DIR" ]; then
     print G " * Mirroring /etc"
-    mount --bind -o users "$ETC_DIR" /etc ||
+    mount --bind "$ETC_DIR" /etc ||
       die "Failed to mount /etc"
   fi
 
