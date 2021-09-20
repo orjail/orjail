@@ -149,10 +149,6 @@ cleanup() {
       eno iptables -t nat ${line//-A/-D}
     done
 
-
-  fi
-
-  if [ -n "$ETC_DIR" ]; then
     print G " * Remove temporary /etc dir ($ETC_DIR)..."
     eno rm -fr "$ETC_DIR"
   fi
@@ -225,6 +221,12 @@ if [ "$1" = "--inside" ]; then
   NAME="$1"
   shift
 
+  if [ -n "$ETC_DIR" ]; then
+    print G " * Mirroring /etc"
+    mount --bind "$ETC_DIR" /etc ||
+      die "Failed to mount /etc from $ETC_DIR"
+  fi
+
   if [ "$PRIVATE_HOME" = "y" ]; then
     DIR="$USERHOME/.orjail/$NAME"
     print G " * Mount a private $USERHOME from $DIR"
@@ -237,13 +239,6 @@ if [ "$1" = "--inside" ]; then
       die "Failed to mount $USERHOME"
     cd "$USERHOME"
   fi
-
-  if [ -n "$ETC_DIR" ]; then
-    print G " * Mirroring /etc"
-    mount --bind "$ETC_DIR" /etc ||
-      die "Failed to mount /etc"
-  fi
-
 
   print G " * Executing..."
 
@@ -430,22 +425,16 @@ if [ "$1" = "" ]; then
   help_and_exit 1
 fi
 
-# exit on error, and call cleanup on exit
-set -e
-trap cleanup EXIT
-
 # Check linux kernel
 if [ "$(uname)" != "Linux" ]; then
   die "No Linux no party"
 fi
 
-err=0
 for cmd in ip iptables bc mkdir chown grep getent $FIREJAILBIN ${SUDOBIN:-su}; do
   if ! [ -x "$(command -v "$cmd")" ]; then
     die "Cannot locate $cmd executable, please install all needed dependencies:\r\nsudo apt-get install bc iptables grep sudo iproute2 libc-bin"
   fi
 done
-! [ 0 = $err ] && exit $err
 
 USERHOME=$(getent passwd "$USERNAME" | cut -d: -f 6)
 if [ "$USERHOME" = "" ]; then
@@ -465,6 +454,11 @@ if [ $USEFIREJAIL = y ]; then
 
   FIREJAILBIN=firejail
 fi
+
+# exit on error, and call cleanup on exit
+set -e
+trap cleanup EXIT
+
 # check if network namespace already exists
 if ! ip netns list | eno grep \\b"$NAME"\\b; then
 
@@ -557,7 +551,8 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   TORVERSION="$($TORBIN --version|grep -Eo ' ([0-9.]+)'|xargs)"
   print G " * Tor version is $TORVERSION"
 
-  TORCONFIGFILE=$(mktemp /tmp/torXXXXXX)
+  TORCONFIGFILE=$(mktemp torXXXXXX)
+  TORCONFIGFILE=$(realpath "$TORCONFIGFILE")
   if [ "$HOSTTORRC" = "y" ] && [ -f /etc/tor/torrc ]; then
     echo '%include /etc/tor/torrc' >> "$TORCONFIGFILE"
   fi
@@ -590,18 +585,16 @@ EOF
 
   # reuse tor host's cache
   if [ -d "/var/lib/tor" ]; then
-  print G " * Copying host's tor cache"
-  cp -d -R /var/lib/tor "/tmp/orjail-${NAME}"
-  chown -R "$USERNAME" "/tmp/orjail-${NAME}/"
-  chmod -R 700 "/tmp/orjail-${NAME}/"
+    print G " * Copying host's tor cache"
+    cp -d -R /var/lib/tor "/tmp/orjail-${NAME}"
     if [ -f "/tmp/orjail-${NAME}/lock" ]; then
       rm "/tmp/orjail-${NAME}/lock"
     fi
   else
-  mkdir "/tmp/orjail-$NAME"
-  chown "$USERNAME" "/tmp/orjail-${NAME}"
-  chmod -R 700 "/tmp/orjail-${NAME}"
+    mkdir "/tmp/orjail-$NAME"
   fi
+  chown -R "$USERNAME" "/tmp/orjail-${NAME}"
+  chmod -R 700 "/tmp/orjail-${NAME}"
 
   # executing tor
   print G " * Executing Tor..."
@@ -617,11 +610,11 @@ EOF
   fi
 
   if ! [ $USEFIREJAIL = y ]; then
-   ETC_DIR="$USERHOME/.orjail/etc/$NAME"
-   mkdir -p "$ETC_DIR"
-   cp -a /etc/. "$ETC_DIR"
+    ETC_DIR="$USERHOME/.orjail/etc/$NAME"
+    mkdir -p "$ETC_DIR"
+    cp -a /etc/. "$ETC_DIR"
 
-    print G " * Create a temporary /etc/resolv.conf"
+    print G " * Create a temporary /etc/resolv.conf and /etc/nsswitch.conf"
     # remove it in case it's a symlink
     rm "$ETC_DIR/resolv.conf" "$ETC_DIR/nsswitch.conf"
     echo "nameserver $IPHOST" > "$ETC_DIR/resolv.conf"
