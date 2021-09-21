@@ -1,0 +1,132 @@
+orjail(8) -- run application over Tor
+=============================================
+
+<span class="comment">
+# Copyright (C) 2018 - underscore@autistici.org
+# Copyright (C) 2018 - 2018 ENCRYPTED SUPPORT LP <adrelanos@riseup.net>
+# See the file COPYING for copying conditions.
+
+# Not using angle brackets in copyright notice for e-mail address, because
+# angle brackets would result in this file being non-deterministic. (There
+# must be a bug in Debian wheezy in ruby-ronn.)
+
+# Not using "##", because for some reason this comment would be visible in the
+# resulting man page.
+</span>
+
+## SYNOPSIS
+`orjail` [option]
+
+## DESCRIPTION
+Force programs to exclusively use Tor network.
+
+## OPTIONS
+  * -h, --help
+
+    Shows help.
+
+  * -u, --user <user>
+
+    Execute the command with this user permission. By default '$USERNAME'.
+
+  * -n, --name <name>
+
+    Set a custom namespace name. By default '$DEFAULTNAME'.
+
+  * -v, --verbose
+
+    Verbose mode.
+
+  * -k, --keep
+
+    Don't delete namespace and don't kill tor after the execution.
+
+  * -f, --firejail
+
+    Use firejail as a security container (sudo firejail -f pidgin).
+
+  * --firejail-args <args>
+
+    Set arguments to pass to firejail surrounded by quotes.
+
+
+  * -H, --hidden <port>
+
+    Enable Tor as an hidden service forwarding request from/to specified port.
+
+  * -d, --hiddendir <dir>
+
+    Specify where to search for hidden service 'hostname' and 'private_key'.
+
+  * -s, --shell
+
+    Execute a shell.
+
+  * -r, --routing <ip_host> <ip_ns> <netmask>
+
+    Set custom IP.
+
+  * --trans-port <port>
+
+    Set tor TransPort. By default 9040
+
+  * --dns-port <port>
+
+    Set custom DnsPort. By default 5354
+
+  * --port-range <port>-<port>
+
+    Generate random TransPort and DnsPort in the defined range.
+
+## EXAMPLES
+run an hidden service inside orjail (you'll find your address inside `examples/hostname`)
+
+`sudo orjail -v -H 8080 -d examples  "python -m SimpleHTTPServer 8080" `
+
+getting an homepage content with curl via tor
+
+`sudo orjail curl autistici.org > autistici.org `
+
+same as before with another user
+
+`sudo orjail -u another_user curl autistici.org`
+
+"resolve" a onion address (not so useful, just to show that .onion resolving works)
+
+`sudo orjail dig wi7qkxyrdpu5cmvr.onion`
+
+get an onion webserver content via tor:
+
+`sudo orjail curl wi7qkxyrdpu5cmvr.onion`
+
+open a firefox that could reach internet via tor only:
+
+`sudo orjail firefox -P /tmp/tmpprofile`
+
+> warning
+
+> firefox has a flag that blocks .onion resolution by default, change it in **about:config**/**network.dns.blockDotOnion**.
+>
+> **running a browser inside orjail is not safe, please use Tor Browser instead**
+
+get an anonymous shell
+
+`sudo orjail -s`
+
+run pidgin in verbose mode
+
+`sudo orjail -v pidgin`
+
+keep the namespace after exit so we can start another program in same ns
+
+`sudo orjail -k ls`
+
+Use `firejail` as a security sandbox to join orjail network namespace
+
+`sudo orjail -f thunderbird`
+
+## WWW
+https://orjail.github.io/
+
+## AUTHOR
+This man page has been written by Patrick Schleizer (adrelanos@riseup.net) and lesion (lesion@autistici.org)

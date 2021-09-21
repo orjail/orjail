@@ -1,0 +1,17 @@
+orjail (1:1.1-1) unstable; urgency=medium
+
+  * New upstream version (local package).
+
+ -- lesion <lesion@autistici.org>  Tue, 12 Feb 2019 15:21:35 +0000
+
+orjail (1:1.0-1) unstable; urgency=medium
+
+  * New upstream version (local package).
+
+ -- Patrick Schleizer <adrelanos@riseup.net>  Sun, 19 Aug 2018 14:30:00 +0000
+
+orjail (1:0.9-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Patrick Schleizer <adrelanos@riseup.net>  Sun, 19 Aug 2018 14:00:00 +0000
