@@ -607,7 +607,7 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   SOCKSPort 0
   RunAsDaemon 1
 
-  DNSPort [${IPHOST6}]:9053 IPv6Traffic PreferIPv6
+  DNSPort [${IPHOST6}]:${DNSPORT} IPv6Traffic PreferIPv6
   ClientUseIPv6 1
   ClientPreferIPv6DirPort 1
   ClientPreferIPv6ORPort 1  
