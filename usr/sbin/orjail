@@ -661,7 +661,7 @@ EOF
     # remove it in case it's a symlink
     rm "$ETC_DIR/resolv.conf" "$ETC_DIR/nsswitch.conf"
     echo "nameserver $IPHOST" > "$ETC_DIR/resolv.conf"
-    echo "nameserver fd00::1" >> "$ETC_DIR/resolv.conf"
+    echo "nameserver $IPHOST6" >> "$ETC_DIR/resolv.conf"
     chmod a+r "$ETC_DIR/resolv.conf"
 
     cat > "$ETC_DIR/nsswitch.conf" <<EOF
