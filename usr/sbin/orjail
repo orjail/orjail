@@ -604,10 +604,9 @@ if ! ip netns list | eno grep \\b"$NAME"\\b; then
   VirtualAddrNetworkIPv6 [${IPNETNS6}]/64
   TransPort ${IPHOST}:${TRANSPORT}
   DNSPort ${IPHOST}:${DNSPORT}
-  # SOCKSPort 0
+  SOCKSPort 0
   RunAsDaemon 1
 
-  SOCKSPort [${IPHOST6}]:9050 IPv6Traffic PreferIPv6
   DNSPort [${IPHOST6}]:9053 IPv6Traffic PreferIPv6
   ClientUseIPv6 1
   ClientPreferIPv6DirPort 1
