@@ -651,14 +651,15 @@ fi
 NOSETUPERROR=y
 # use firejail as security container
 if [ $USEFIREJAIL = y ]; then
+  BINARYPATH="$(readlink -f $(which "$@"))"
   # shellcheck disable=SC2068
   if [ $NAMESPACE_EXIST = y ]; then
-    run "$FIREJAILBIN" ${FIREJAILARGS[@]} --join="$NAME" "$@"
+    run "$FIREJAILBIN" ${FIREJAILARGS[@]} --join="$NAME" "$BINARYPATH"
   else
     run "$FIREJAILBIN" \
       --quiet --dns="$IPHOST" --name="$NAME" --netns="$NAME" \
       --hostname=host --noroot --private-tmp --private-dev \
-      ${FIREJAILARGS[@]} "$@"
+      ${FIREJAILARGS[@]} "$BINARYPATH"
   fi
 else #or without
   if [ $NAMESPACE_EXIST = y ]; then
